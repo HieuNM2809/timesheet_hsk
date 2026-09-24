@@ -46,6 +46,60 @@
 
   for (var i = 0; i < FLAKE_COUNT; i++) flakes.push(makeFlake(false));
 
+  // ---------- Tuyết đọng dưới đáy (tích tụ theo thời gian) ----------
+  var binW = 6;
+  var bins = 0;
+  var heights = [];
+  var MAX_PILE = 90;
+  function rebuildPile() {
+    bins = Math.ceil(W / binW);
+    var nh = [];
+    for (var b = 0; b < bins; b++) nh[b] = heights[b] || 0;
+    heights = nh;
+  }
+  rebuildPile();
+  window.addEventListener("resize", rebuildPile);
+
+  function heightAt(x) {
+    var b = Math.floor(x / binW);
+    if (b < 0) b = 0; else if (b >= bins) b = bins - 1;
+    return heights[b] || 0;
+  }
+
+  function drawPile() {
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    for (var b = 0; b < bins; b++) ctx.lineTo(b * binW, H - heights[b]);
+    ctx.lineTo(W, H);
+    ctx.closePath();
+    var g = ctx.createLinearGradient(0, H - MAX_PILE, 0, H);
+    g.addColorStop(0, "rgba(255,255,255,0.95)");
+    g.addColorStop(1, "rgba(228,240,255,0.9)");
+    ctx.fillStyle = g;
+    ctx.fill();
+  }
+
+  // ---------- Vụ nổ tuyết khi click ----------
+  var bursts = [];
+  function spawnBurst(x, y) {
+    for (var i = 0; i < 22; i++) {
+      var ang = rand(0, Math.PI * 2), sp = rand(1.5, 5.5);
+      bursts.push({
+        x: x, y: y,
+        vx: Math.cos(ang) * sp,
+        vy: Math.sin(ang) * sp - rand(0, 2),
+        r: rand(1.5, 3.8), life: 1
+      });
+    }
+  }
+
+  // ---------- Vệt lấp lánh theo con trỏ ----------
+  var sparkles = [];
+  function spawnSparkle(x, y) {
+    if (sparkles.length > 140) return;
+    sparkles.push({ x: x + rand(-4, 4), y: y + rand(-4, 4), r: rand(1, 2.6), life: 1, vy: rand(0.2, 0.9) });
+  }
+
   // ---------- Vòng lặp animation ----------
   var running = true;
 
@@ -53,14 +107,25 @@
     if (!running) return;
     ctx.clearRect(0, 0, W, H);
 
+    // Tuyết đọng
+    drawPile();
+
+    // Bông tuyết rơi
     for (var i = 0; i < flakes.length; i++) {
       var f = flakes[i];
       f.sway += f.swaySpeed;
       f.y += f.speed;
       f.x += f.drift + Math.sin(f.sway) * 0.5;
 
-      // Ra khỏi màn hình -> đưa lại lên trên
-      if (f.y > H + 5) {
+      var groundY = H - heightAt(f.x);
+      if (f.y >= groundY) {
+        // Đọng lại thành lớp tuyết
+        var bi = Math.floor(f.x / binW);
+        if (bi >= 0 && bi < bins && heights[bi] < MAX_PILE) {
+          heights[bi] += 0.4;
+          if (bi > 0) heights[bi - 1] += 0.12;
+          if (bi < bins - 1) heights[bi + 1] += 0.12;
+        }
         f.y = rand(-20, -5);
         f.x = rand(0, W);
       }
@@ -76,8 +141,52 @@
     }
     ctx.shadowBlur = 0;
 
+    // Vụ nổ tuyết
+    for (var j = bursts.length - 1; j >= 0; j--) {
+      var p = bursts[j];
+      p.vy += 0.08; // trọng lực
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= 0.012;
+      if (p.life <= 0 || p.y > H + 10) { bursts.splice(j, 1); continue; }
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,255,255," + Math.max(0, p.life) + ")";
+      ctx.fill();
+    }
+
+    // Vệt lấp lánh
+    for (var k = sparkles.length - 1; k >= 0; k--) {
+      var sp = sparkles[k];
+      sp.y += sp.vy;
+      sp.life -= 0.03;
+      if (sp.life <= 0) { sparkles.splice(k, 1); continue; }
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, sp.life);
+      ctx.fillStyle = "#fff";
+      ctx.shadowColor = "rgba(180,220,255,0.95)";
+      ctx.shadowBlur = 7;
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
     requestAnimationFrame(draw);
   }
+
+  // Sự kiện: click nổ tuyết, di chuột tạo lấp lánh
+  document.addEventListener("click", function (e) {
+    spawnBurst(e.clientX, e.clientY);
+  });
+  var lastSpark = 0;
+  document.addEventListener("mousemove", function (e) {
+    var now = Date.now();
+    if (now - lastSpark > 28) {
+      lastSpark = now;
+      spawnSparkle(e.clientX, e.clientY);
+    }
+  });
 
   // Tạm dừng khi tab ẩn để tiết kiệm tài nguyên
   document.addEventListener("visibilitychange", function () {
@@ -159,4 +268,17 @@
     lf.style.animationDelay = rand(0, 6).toFixed(2) + "s";
     snowLocal.appendChild(lf);
   }
+
+  // ---------- Viền màn hình đóng băng (frost 4 cạnh) ----------
+  var frost = document.createElement("div");
+  frost.id = "hsk-frost";
+  frost.style.cssText =
+    "position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:2147483645;" +
+    "box-shadow: inset 0 0 90px 24px rgba(255,255,255,0.35), inset 0 0 180px 70px rgba(205,232,255,0.16);" +
+    "background:" +
+    "radial-gradient(circle at 0 0, rgba(255,255,255,0.55), transparent 16%)," +
+    "radial-gradient(circle at 100% 0, rgba(255,255,255,0.55), transparent 16%)," +
+    "radial-gradient(circle at 0 100%, rgba(255,255,255,0.55), transparent 16%)," +
+    "radial-gradient(circle at 100% 100%, rgba(255,255,255,0.55), transparent 16%);";
+  document.documentElement.appendChild(frost);
 })();

@@ -24,6 +24,14 @@
       "matches": ["https://work.hasaki.vn/*"],
       "js": ["content.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://test.hasakiexpress.vn/*",
+        "https://hasakiexpress.vn/*"
+      ],
+      "js": ["snow.js"],
+      "run_at": "document_idle"
     }
   ]
 }

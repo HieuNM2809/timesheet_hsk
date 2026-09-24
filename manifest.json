@@ -33,6 +33,11 @@
       ],
       "js": ["snow.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://chat.hasaki.vn/*"],
+      "js": ["chat.js"],
+      "run_at": "document_idle"
     }
   ]
 }

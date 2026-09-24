@@ -39,11 +39,11 @@
     '.fab {' +
     '  position: fixed; bottom: 180px; right: 26px; z-index: 2147483647;' +
     '  width: 65px; height: 65px; border-radius: 50%; border: none; cursor: pointer;' +
-    '  background: linear-gradient(135deg, #306e51, #306e51); color: #fff; font-size: 24px;' +
-    '  box-shadow: 0 6px 18px rgb(48 110 81); transition: transform 0.2s, box-shadow 0.2s;' +
+    '  background: hsl(152 39% 31% / 1); color: #fff; font-size: 24px;' +
+    '  box-shadow: 0 6px 18px hsl(152 39% 31% / 0.6); transition: transform 0.2s, box-shadow 0.2s;' +
     '  display: flex; align-items: center; justify-content: center;' +
     '}' +
-    '.fab:hover { transform: scale(1.08); box-shadow: 0 8px 22px rgba(48,110,81,0.75); }' +
+    '.fab:hover { transform: scale(1.08); box-shadow: 0 8px 22px hsl(152 39% 31% / 0.8); }' +
     // Panel
     '.panel {' +
     '  position: fixed; bottom: 92px; right: 24px; z-index: 2147483647;' +

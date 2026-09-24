@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đăng nhập và Tính Giờ Làm Việc</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+  <style>
+    /* Global styles và hiệu ứng xuất hiện */
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      width: 700px;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      animation: fadeIn 1s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    /* Container chung với hiệu ứng slide */
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      margin: 20px;
+      width: 320px;
+      transition: transform 0.3s, box-shadow 0.3s;
+      animation: slideUp 0.6s ease-out;
+    }
+    .container:hover {
+      /* transform: translateY(-8px); */
+      box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    /* Container dữ liệu có chiều rộng linh hoạt */
+    #dataContainer {
+      width: 90%;
+      max-width: 800px;
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+    }
+    h2:after {
+      content: '';
+      width: 60px;
+      height: 3px;
+      background: #007bff;
+      display: block;
+      margin: 8px auto 0;
+      border-radius: 2px;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+    label {
+      margin-bottom: 5px;
+      color: #555;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+    label:hover {
+      color: #007bff;
+    }
+    input[type="text"],
+    input[type="date"] {
+      padding: 12px;
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    input[type="text"]:focus,
+    input[type="date"]:focus {
+      border-color: #007bff;
+      box-shadow: 0 0 8px rgba(0,123,255,0.2);
+    }
+    button {
+      padding: 14px;
+      background: linear-gradient(45deg, #007bff, #0056b3);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      transition: background 0.3s, transform 0.3s;
+    }
+    button:hover {
+      background: linear-gradient(45deg, #0056b3, #003f7f);
+      /* transform: translateY(-2px); */
+    }
+    /* Bảng dữ liệu */
+    #tableWrapper {
+      overflow-x: auto;
+      margin-top: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      animation: fadeIn 1s ease-out;
+    }
+    #dataTable {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      font-size: 14px;
+      animation: fadeIn 1s ease-out;
+    }
+    #dataTable th, #dataTable td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid #eef0f3;
+      transition: background-color 0.2s;
+    }
+    #dataTable thead th {
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: #fff;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      position: sticky;
+      top: 0;
+    }
+    #dataTable tbody tr:nth-child(even) {
+      background-color: #f7f9fc;
+    }
+    #dataTable tbody tr:hover {
+      background-color: #eef4ff;
+    }
+    #dataTable tbody tr:last-child td {
+      border-bottom: none;
+    }
+    /* Hiển thị kết quả giờ làm */
+    .overtime {
+      color: #1e7e34;
+      font-weight: 700;
+    }
+    .shortage {
+      color: #c82333;
+      font-weight: 800;
+    }
+    /* Dòng thiếu giờ hoặc chưa check-out cần chú ý */
+    tr.row-warning {
+      background-color: #fff5f5 !important;
+    }
+    tr.row-warning:hover {
+      background-color: #ffe9e9 !important;
+    }
+    tr.row-warning td:first-child {
+      border-left: 4px solid #dc3545;
+    }
+    .missing-checkout {
+      color: #c82333;
+      font-weight: 800;
+    }
+    /* Phần tổng kết - dạng các thẻ thống kê */
+    #summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+      animation: fadeIn 0.8s ease-out;
+    }
+    .stat-card {
+      background: #fff;
+      border: 1px solid #eef0f3;
+      border-radius: 12px;
+      padding: 16px 12px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      border-top: 4px solid #ccc;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+    }
+    .stat-card .stat-label {
+      font-size: 12px;
+      color: #777;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .stat-card .stat-value {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .stat-card .stat-unit {
+      font-size: 13px;
+      font-weight: 500;
+      color: #999;
+      margin-left: 3px;
+    }
+    .stat-card.excess { border-top-color: #28a745; }
+    .stat-card.excess .stat-value { color: #28a745; }
+    .stat-card.shortage { border-top-color: #dc3545; }
+    .stat-card.shortage .stat-value { color: #dc3545; }
+    .stat-card.final {
+      border: 1px solid #cfe2ff;
+      border-top: 4px solid #007bff;
+      background: linear-gradient(135deg, #eaf3ff, #f7fbff);
+      box-shadow: 0 4px 12px rgba(0,123,255,0.18);
+    }
+    .stat-card.final .stat-label {
+      color: #0056b3;
+      font-weight: 700;
+    }
+    .stat-card.final .stat-value {
+      font-size: 32px;
+      font-weight: 800;
+    }
+    .stat-card.final.positive .stat-value { color: #1e7e34; }
+    .stat-card.final.negative .stat-value { color: #c82333; }
+    /* Header của phần dữ liệu + nút quay lại */
+    .data-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .btn-back {
+      width: auto;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      background: #eef2f7;
+      color: #007bff;
+      border: 1px solid #d6e0ec;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-back:hover {
+      background: #007bff;
+      color: #fff;
+    }
+    .range-label {
+      font-size: 13px;
+      color: #666;
+      font-weight: 500;
+    }
+    /* Thông tin nhân viên hiển thị ở đầu */
+    .profile-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .staff-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #007bff;
+      box-shadow: 0 3px 10px rgba(0,123,255,0.25);
+      margin-bottom: 8px;
+    }
+    .staff-name {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: #0056b3;
+    }
+    /* Trạng thái đang tải */
+    #loadingState {
+      text-align: center;
+      padding: 30px;
+      color: #007bff;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <!-- Container đăng nhập -->
+  <div id="loginContainer" class="container">
+    <h2>Đăng nhập</h2>
+    <form id="loginForm">
+      <!-- <label for="tokenInput">Nhập Token:</label>
+      <input type="text" id="tokenInput" name="token" placeholder="Token của bạn" required> -->
+      
+      <label for="fromDate">Từ ngày:</label>
+      <input type="date" id="fromDate" name="from_date" required>
+      
+      <label for="toDate">Đến ngày:</label>
+      <input type="date" id="toDate" name="to_date" required>
+      
+      <button type="submit">Đăng nhập & Lấy dữ liệu</button>
+    </form>
+  </div>
+  
+  <!-- Container hiển thị dữ liệu -->
+  <div id="dataContainer" class="container" style="display: none;">
+    <div class="data-header">
+      <button type="button" id="backBtn" class="btn-back">← Chọn lại tháng</button>
+      <div id="rangeLabel" class="range-label"></div>
+    </div>
+    <h2>Danh sách dữ liệu</h2>
+    <div id="profileHeader" class="profile-header">
+      <img id="staffAvatar" class="staff-avatar" alt="Avatar" style="display:none;">
+      <div id="staffName" class="staff-name"></div>
+    </div>
+    <div id="summary"></div>
+    <div id="tableWrapper">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th>Ngày</th>
+            <th>Check-in</th>
+            <th>Check-out</th>
+            <th>Kết quả</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Các dòng dữ liệu sẽ được chèn vào đây -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

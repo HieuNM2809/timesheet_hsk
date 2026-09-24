@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Đăng nhập và Tính Giờ Làm Việc",
+  "version": "1.0",
+  "description": "Extension lấy token từ cookie (wshr-token) và tính giờ làm việc.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "checkin.png"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "cookies"
+  ],
+  "host_permissions": [
+    "https://wshr.hasaki.vn/",
+    "https://work.hasaki.vn/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://work.hasaki.vn/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

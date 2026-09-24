@@ -3,6 +3,9 @@
   if (window.__hskSnowInjected) return;
   window.__hskSnowInjected = true;
 
+  var effectsEnabled = true; // bật/tắt toàn bộ hiệu ứng
+  var hatEl = null;          // mũ Noel trên logo (nếu có)
+
   // ---------- Canvas phủ toàn màn hình (không chặn thao tác) ----------
   var canvas = document.createElement("canvas");
   canvas.id = "hsk-snow-canvas";
@@ -188,15 +191,18 @@
     }
   });
 
-  // Tạm dừng khi tab ẩn để tiết kiệm tài nguyên
-  document.addEventListener("visibilitychange", function () {
-    if (document.hidden) {
-      running = false;
-    } else if (!running) {
+  // Bật/tắt vòng lặp theo trạng thái hiệu ứng và hiển thị tab
+  function updateRunning() {
+    var shouldRun = effectsEnabled && !document.hidden;
+    if (shouldRun && !running) {
       running = true;
       requestAnimationFrame(draw);
+    } else if (!shouldRun) {
+      running = false;
+      if (ctx) ctx.clearRect(0, 0, W, H);
     }
-  });
+  }
+  document.addEventListener("visibilitychange", updateRunning);
 
   requestAnimationFrame(draw);
 
@@ -293,7 +299,7 @@
 
   // ----- 1) Ông già Noel cưỡi tuần lộc bay ngang -----
   function flySanta() {
-    if (document.hidden) return;
+    if (!effectsEnabled || document.hidden) return;
     var s = document.createElement("div");
     s.className = "hsk-santa";
     s.textContent = "🎅🛷🦌🦌";
@@ -307,7 +313,7 @@
 
   // ----- 2) Quà rơi xen lẫn tuyết -----
   function dropGift() {
-    if (document.hidden) return;
+    if (!effectsEnabled || document.hidden) return;
     var g = document.createElement("div");
     g.className = "hsk-gift";
     g.textContent = Math.random() < 0.85 ? "🎁" : (Math.random() < 0.5 ? "🍬" : "⛄");
@@ -378,7 +384,9 @@
         "<circle cx='34' cy='7' r='5' fill='#fff'/>" +
         "</svg>";
       document.documentElement.appendChild(hatWrap);
+      hatEl = hatWrap;
       var placeHat = function () {
+        if (!effectsEnabled) { hatWrap.style.display = "none"; return; }
         var r = logo.getBoundingClientRect();
         if (!r.width || !r.height) { hatWrap.style.display = "none"; return; }
         hatWrap.style.display = "block";
@@ -394,4 +402,44 @@
       setInterval(placeHat, 1000);
     }
   } catch (e) { /* bỏ qua nếu không tìm được logo */ }
+
+  // ================= Nút bật/tắt hiệu ứng =================
+  var toggleBtn = document.createElement("button");
+  toggleBtn.style.cssText =
+    "position:fixed;top:56px;right:14px;z-index:2147483647;width:36px;height:36px;" +
+    "border:none;border-radius:50%;cursor:pointer;background:rgba(255,255,255,0.9);" +
+    "box-shadow:0 2px 8px rgba(0,0,0,0.25);font-size:17px;line-height:36px;text-align:center;" +
+    "padding:0;pointer-events:auto;transition:transform 0.2s;";
+  toggleBtn.addEventListener("mouseenter", function () { toggleBtn.style.transform = "scale(1.12)"; });
+  toggleBtn.addEventListener("mouseleave", function () { toggleBtn.style.transform = "scale(1)"; });
+  document.documentElement.appendChild(toggleBtn);
+
+  function setEnabled(on) {
+    effectsEnabled = on;
+    var disp = on ? "" : "none";
+    canvas.style.display = disp;
+    frost.style.display = disp;
+    deco.style.display = disp;
+    garlandHost.style.display = disp;
+    snowmanHost.style.display = disp;
+    if (hatEl) hatEl.style.display = on ? "block" : "none";
+    updateRunning();
+    toggleBtn.textContent = on ? "❄️" : "🌙";
+    toggleBtn.title = on ? "Tắt hiệu ứng lễ hội" : "Bật hiệu ứng lễ hội";
+  }
+
+  toggleBtn.addEventListener("click", function () {
+    var next = !effectsEnabled;
+    setEnabled(next);
+    try { chrome.storage.local.set({ hsk_effects_enabled: next }); } catch (e) {}
+  });
+
+  // Đọc lựa chọn đã lưu (mặc định bật)
+  try {
+    chrome.storage.local.get({ hsk_effects_enabled: true }, function (res) {
+      setEnabled(res && res.hsk_effects_enabled !== false);
+    });
+  } catch (e) {
+    setEnabled(true);
+  }
 })();

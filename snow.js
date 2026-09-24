@@ -281,4 +281,117 @@
     "radial-gradient(circle at 0 100%, rgba(255,255,255,0.55), transparent 16%)," +
     "radial-gradient(circle at 100% 100%, rgba(255,255,255,0.55), transparent 16%);";
   document.documentElement.appendChild(frost);
+
+  // ================= Trang trí lễ hội =================
+  var festiveStyle = document.createElement("style");
+  festiveStyle.textContent =
+    "@keyframes hsk-santa-fly { 0% { transform: translateX(-340px) translateY(0); } 50% { transform: translateX(50vw) translateY(-20px); } 100% { transform: translateX(calc(100vw + 340px)) translateY(0); } }" +
+    "@keyframes hsk-gift-fall { 0% { transform: translateY(-60px) rotate(0deg); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(100vh) rotate(340deg); opacity: 0.85; } }" +
+    ".hsk-santa { position: fixed; top: 30px; left: 0; font-size: 44px; line-height: 1; z-index: 2147483646; pointer-events: none; white-space: nowrap; will-change: transform; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.25)); }" +
+    ".hsk-gift { position: fixed; top: -60px; font-size: 30px; line-height: 1; z-index: 2147483646; pointer-events: none; will-change: transform; }";
+  document.documentElement.appendChild(festiveStyle);
+
+  // ----- 1) Ông già Noel cưỡi tuần lộc bay ngang -----
+  function flySanta() {
+    if (document.hidden) return;
+    var s = document.createElement("div");
+    s.className = "hsk-santa";
+    s.textContent = "🎅🛷🦌🦌";
+    s.style.top = (20 + Math.random() * 50) + "px";
+    s.style.animation = "hsk-santa-fly 12s linear forwards";
+    document.documentElement.appendChild(s);
+    s.addEventListener("animationend", function () { s.remove(); });
+  }
+  setTimeout(flySanta, 8000); // lần đầu sau 8s
+  setInterval(flySanta, 150000 + Math.random() * 90000); // ~2.5 - 4 phút/lần
+
+  // ----- 2) Quà rơi xen lẫn tuyết -----
+  function dropGift() {
+    if (document.hidden) return;
+    var g = document.createElement("div");
+    g.className = "hsk-gift";
+    g.textContent = Math.random() < 0.85 ? "🎁" : (Math.random() < 0.5 ? "🍬" : "⛄");
+    g.style.left = (Math.random() * 95) + "vw";
+    g.style.animation = "hsk-gift-fall " + (7 + Math.random() * 5).toFixed(1) + "s linear forwards";
+    document.documentElement.appendChild(g);
+    g.addEventListener("animationend", function () { g.remove(); });
+  }
+  setInterval(dropGift, 18000);
+
+  // ----- 3) Dây đèn nháy vắt ngang mép trên -----
+  var garlandHost = document.createElement("div");
+  garlandHost.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:46px;z-index:2147483646;pointer-events:none;";
+  document.documentElement.appendChild(garlandHost);
+  var gsh = garlandHost.attachShadow({ mode: "open" });
+  var bulbColors = ["#ff4d4d", "#ffd24d", "#4dff88", "#4dd2ff", "#ff7ae0"];
+  var bulbCount = Math.max(14, Math.round(window.innerWidth / 55));
+  var bulbsHtml = "";
+  for (var gi = 0; gi < bulbCount; gi++) {
+    var cx = ((gi + 0.5) * (100 / bulbCount)).toFixed(2);
+    bulbsHtml += "<span class='bulb' style='left:" + cx + "vw;color:" + bulbColors[gi % bulbColors.length] +
+      ";animation-delay:" + (gi * 0.15).toFixed(2) + "s'></span>";
+  }
+  gsh.innerHTML =
+    "<style>" +
+    ".wire { position:absolute; top:0; left:-2%; width:104%; height:22px; border-bottom:2px solid rgba(70,45,25,0.55); border-radius:0 0 48% 48% / 0 0 100% 100%; }" +
+    ".bulb { position:absolute; top:18px; width:9px; height:13px; margin-left:-4.5px; border-radius:50% 50% 55% 55%; background:currentColor; box-shadow:0 0 8px currentColor; animation:hsk-blink 1.4s ease-in-out infinite alternate; }" +
+    ".bulb::before { content:''; position:absolute; top:-3px; left:2px; width:5px; height:3px; background:#555; border-radius:2px; }" +
+    "@keyframes hsk-blink { from { opacity:0.35; } to { opacity:1; } }" +
+    "</style><div class='wire'></div>" + bulbsHtml;
+
+  // ----- 4) Người tuyết ở góc trái dưới -----
+  var snowmanHost = document.createElement("div");
+  snowmanHost.style.cssText = "position:fixed;left:16px;bottom:0;width:120px;height:175px;z-index:2147483646;pointer-events:none;";
+  document.documentElement.appendChild(snowmanHost);
+  var msh = snowmanHost.attachShadow({ mode: "open" });
+  msh.innerHTML =
+    "<style>.sm { filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); animation: hsk-bob 4s ease-in-out infinite; transform-origin: 60px 165px; } @keyframes hsk-bob { 0%,100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.5deg); } }</style>" +
+    "<svg class='sm' width='120' height='175' viewBox='0 0 120 175'>" +
+    "<ellipse cx='60' cy='167' rx='50' ry='8' fill='#fff' opacity='0.9'/>" +
+    "<circle cx='60' cy='122' r='34' fill='#f4f9ff'/>" +
+    "<circle cx='60' cy='72' r='24' fill='#f4f9ff'/>" +
+    "<rect x='39' y='48' width='42' height='8' rx='2' fill='#c0392b'/>" +
+    "<rect x='46' y='24' width='28' height='26' rx='3' fill='#222'/>" +
+    "<rect x='44' y='44' width='32' height='7' fill='#c0392b'/>" +
+    "<circle cx='52' cy='68' r='3' fill='#333'/><circle cx='68' cy='68' r='3' fill='#333'/>" +
+    "<polygon points='60,74 84,78 60,82' fill='#e67e22'/>" +
+    "<circle cx='53' cy='84' r='1.6' fill='#333'/><circle cx='60' cy='86' r='1.6' fill='#333'/><circle cx='67' cy='84' r='1.6' fill='#333'/>" +
+    "<circle cx='60' cy='110' r='3' fill='#333'/><circle cx='60' cy='124' r='3' fill='#333'/><circle cx='60' cy='138' r='3' fill='#333'/>" +
+    "<rect x='37' y='94' width='46' height='9' rx='3' fill='#2980b9'/>" +
+    "<rect x='72' y='98' width='9' height='24' rx='3' fill='#2980b9'/>" +
+    "<line x1='27' y1='120' x2='3' y2='106' stroke='#7a4a21' stroke-width='3' stroke-linecap='round'/>" +
+    "<line x1='93' y1='120' x2='117' y2='106' stroke='#7a4a21' stroke-width='3' stroke-linecap='round'/>" +
+    "</svg>";
+
+  // ----- 5) Mũ Noel gắn lên logo trang (best-effort) -----
+  try {
+    var logo = document.querySelector(
+      'img[alt*="logo" i], img[src*="logo" i], .logo img, header a img, a[href="/"] img, header img'
+    );
+    if (logo) {
+      var hatWrap = document.createElement("div");
+      hatWrap.style.cssText = "position:fixed;z-index:2147483647;pointer-events:none;transform:rotate(-18deg);";
+      hatWrap.innerHTML =
+        "<svg width='100%' height='100%' viewBox='0 0 40 34'>" +
+        "<path d='M4 27 Q9 3 33 8 Q29 18 30 27 Z' fill='#c0392b'/>" +
+        "<rect x='2' y='24' width='33' height='8' rx='4' fill='#fff'/>" +
+        "<circle cx='34' cy='7' r='5' fill='#fff'/>" +
+        "</svg>";
+      document.documentElement.appendChild(hatWrap);
+      var placeHat = function () {
+        var r = logo.getBoundingClientRect();
+        if (!r.width || !r.height) { hatWrap.style.display = "none"; return; }
+        hatWrap.style.display = "block";
+        var w = Math.max(26, r.height * 0.9);
+        hatWrap.style.width = w + "px";
+        hatWrap.style.height = (w * 0.85) + "px";
+        hatWrap.style.left = (r.left - w * 0.12) + "px";
+        hatWrap.style.top = (r.top - w * 0.55) + "px";
+      };
+      placeHat();
+      window.addEventListener("scroll", placeHat, true);
+      window.addEventListener("resize", placeHat);
+      setInterval(placeHat, 1000);
+    }
+  } catch (e) { /* bỏ qua nếu không tìm được logo */ }
 })();

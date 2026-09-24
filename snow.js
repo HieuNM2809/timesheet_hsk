@@ -428,16 +428,25 @@
     toggleBtn.title = on ? "Tắt hiệu ứng lễ hội" : "Bật hiệu ứng lễ hội";
   }
 
+  // Key lưu trạng thái RIÊNG theo từng trang (domain)
+  var STORAGE_KEY = "hsk_effects_enabled_" + location.hostname;
+
   toggleBtn.addEventListener("click", function () {
     var next = !effectsEnabled;
     setEnabled(next);
-    try { chrome.storage.local.set({ hsk_effects_enabled: next }); } catch (e) {}
+    try {
+      var obj = {};
+      obj[STORAGE_KEY] = next;
+      chrome.storage.local.set(obj);
+    } catch (e) {}
   });
 
-  // Đọc lựa chọn đã lưu (mặc định bật)
+  // Đọc lựa chọn đã lưu cho trang này (mặc định bật)
   try {
-    chrome.storage.local.get({ hsk_effects_enabled: true }, function (res) {
-      setEnabled(res && res.hsk_effects_enabled !== false);
+    var query = {};
+    query[STORAGE_KEY] = true;
+    chrome.storage.local.get(query, function (res) {
+      setEnabled(res && res[STORAGE_KEY] !== false);
     });
   } catch (e) {
     setEnabled(true);

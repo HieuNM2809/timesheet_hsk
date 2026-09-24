@@ -54,6 +54,16 @@ Chênh lệch      = Giờ làm thực tế - 8
 
 > Ngày chưa check-out sẽ không được tính vào tổng kết.
 
+### Nửa ngày (4 giờ)
+
+Mỗi dòng có ô tick **"Nửa ngày (4h)"**. Khi tick, ngày đó chỉ cần **4 giờ** thay vì 8:
+
+```
+Chênh lệch = Giờ làm thực tế - 4   (thay vì - 8)
+```
+
+Kết quả dòng đó và toàn bộ tổng kết được **tính lại ngay** khi tick/bỏ tick.
+
 ---
 
 ## 5. Cấu trúc file

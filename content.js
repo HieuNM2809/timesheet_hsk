@@ -98,6 +98,8 @@
     'tr.row-warning:hover { background: #ffe9e9 !important; }' +
     'tr.row-warning td:first-child { border-left: 4px solid #dc3545; }' +
     '.missing-checkout { color: #c82333; font-weight: 800; }' +
+    '.half-day-cell { text-align: center; }' +
+    '.half-day { width: 18px; height: 18px; cursor: pointer; }' +
     '.state-msg { text-align: center; padding: 24px; color: #007bff; font-weight: 600; }' +
     '</style>' +
     '<button class="fab" title="Giờ làm việc">⏱</button>' +
@@ -118,7 +120,7 @@
     '  <div class="summary"></div>' +
     '  <div class="table-wrapper">' +
     '    <table>' +
-    '      <thead><tr><th>Ngày</th><th>Check-in</th><th>Check-out</th><th>Kết quả</th></tr></thead>' +
+    '      <thead><tr><th>Ngày</th><th>Check-in</th><th>Check-out</th><th>Kết quả</th><th>Nửa ngày (4h)</th></tr></thead>' +
     '      <tbody></tbody>' +
     '    </table>' +
     '  </div>' +
@@ -141,6 +143,10 @@
   toInput.value = range.to;
   var loadedOnce = false;
 
+  // Lưu lựa chọn "nửa ngày" theo từng ngày (giữ khi tải lại cùng kỳ) và danh sách dòng hiện tại
+  var halfDayMap = {};
+  var currentRows = [];
+
   // ---------- Render ----------
   function renderProfile(profileResp) {
     if (profileResp && profileResp.status === 1 && profileResp.data && profileResp.data.profile) {
@@ -152,7 +158,8 @@
 
   function renderTimesheet(tsResp) {
     tbody.innerHTML = "";
-    var totalExcess = 0, totalShortage = 0, staffName = "";
+    currentRows = [];
+    var staffName = "";
 
     if (tsResp && tsResp.status === 1 && tsResp.data && Array.isArray(tsResp.data.rows)) {
       tsResp.data.rows.forEach(function (row) {
@@ -161,41 +168,71 @@
         var tr = document.createElement("tr");
         var checkInTime = new Date(row.check_in * 1000).toLocaleString();
         var checkOutTime = row.check_out ? new Date(row.check_out * 1000).toLocaleString() : "Chưa có";
-        var resultText = "", resultClass = "", isWarning = false, checkOutCellClass = "";
+        var hasCheckout = !!row.check_out;
+        var checkOutCellClass = hasCheckout ? "" : "missing-checkout";
+        var isChecked = halfDayMap[row.date] ? "checked" : "";
+        var cbDisabled = hasCheckout ? "" : "disabled";
 
-        if (row.check_out) {
-          var effectiveHours = (row.check_out - row.check_in) / 3600 - 1;
-          var diff = effectiveHours - 8;
-          if (diff >= 0) {
-            resultText = "Dư: " + diff.toFixed(2) + " giờ";
-            resultClass = "overtime";
-            totalExcess += diff;
-          } else {
-            resultText = "Thiếu: " + Math.abs(diff).toFixed(2) + " giờ";
-            resultClass = "shortage";
-            totalShortage += Math.abs(diff);
-            isWarning = true;
-          }
-        } else {
-          resultText = "⚠ Chưa check-out";
-          resultClass = "shortage";
-          checkOutCellClass = "missing-checkout";
-          isWarning = true;
-        }
-
-        if (isWarning) tr.className = "row-warning";
+        // Cột "Kết quả" và class dòng sẽ được điền bởi recalc()
         tr.innerHTML =
           "<td>" + escapeHtml(row.date) + "</td>" +
           "<td>" + escapeHtml(checkInTime) + "</td>" +
           "<td class='" + checkOutCellClass + "'>" + escapeHtml(checkOutTime) + "</td>" +
-          "<td class='" + resultClass + "'>" + escapeHtml(resultText) + "</td>";
+          "<td class='result-cell'></td>" +
+          "<td class='half-day-cell'><input type='checkbox' class='half-day' data-date='" + escapeHtml(row.date) + "' " + isChecked + " " + cbDisabled + "></td>";
         tbody.appendChild(tr);
+        currentRows.push({ row: row, tr: tr });
       });
     } else {
-      tbody.innerHTML = "<tr><td colspan='4' class='state-msg'>Không có dữ liệu hiển thị hoặc xảy ra lỗi.</td></tr>";
+      tbody.innerHTML = "<tr><td colspan='5' class='state-msg'>Không có dữ liệu hiển thị hoặc xảy ra lỗi.</td></tr>";
     }
 
     if (!nameEl.textContent && staffName) nameEl.textContent = staffName;
+
+    // Gắn sự kiện cho các checkbox "nửa ngày"
+    shadow.querySelectorAll(".half-day").forEach(function (cb) {
+      cb.addEventListener("change", function () {
+        halfDayMap[this.getAttribute("data-date")] = this.checked;
+        recalc();
+      });
+    });
+
+    recalc();
+  }
+
+  // Tính lại kết quả từng dòng + tổng kết (chuẩn 8h/ngày, hoặc 4h nếu tick nửa ngày)
+  function recalc() {
+    var totalExcess = 0, totalShortage = 0;
+
+    currentRows.forEach(function (item) {
+      var row = item.row, tr = item.tr;
+      var resultCell = tr.querySelector(".result-cell");
+      var resultText = "", resultClass = "", isWarning = false;
+
+      if (row.check_out) {
+        var effectiveHours = (row.check_out - row.check_in) / 3600 - 1;
+        var standard = halfDayMap[row.date] ? 4 : 8;
+        var diff = effectiveHours - standard;
+        if (diff >= 0) {
+          resultText = "Dư: " + diff.toFixed(2) + " giờ";
+          resultClass = "overtime";
+          totalExcess += diff;
+        } else {
+          resultText = "Thiếu: " + Math.abs(diff).toFixed(2) + " giờ";
+          resultClass = "shortage";
+          totalShortage += Math.abs(diff);
+          isWarning = true;
+        }
+      } else {
+        resultText = "⚠ Chưa check-out";
+        resultClass = "shortage";
+        isWarning = true;
+      }
+
+      tr.className = isWarning ? "row-warning" : "";
+      resultCell.className = "result-cell " + resultClass;
+      resultCell.textContent = resultText;
+    });
 
     var finalHours = totalExcess - totalShortage;
     var finalClass = finalHours >= 0 ? "positive" : "negative";
@@ -209,22 +246,22 @@
   function loadData() {
     var fromDate = fromInput.value;
     var toDate = toInput.value;
-    tbody.innerHTML = "<tr><td colspan='4' class='state-msg'>Đang tải dữ liệu...</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='5' class='state-msg'>Đang tải dữ liệu...</td></tr>";
     summaryEl.innerHTML = "";
 
     chrome.runtime.sendMessage(
       { action: "fetchTimesheet", fromDate: fromDate, toDate: toDate },
       function (resp) {
         if (chrome.runtime.lastError || !resp) {
-          tbody.innerHTML = "<tr><td colspan='4' class='state-msg'>Không kết nối được extension. Hãy tải lại trang.</td></tr>";
+          tbody.innerHTML = "<tr><td colspan='5' class='state-msg'>Không kết nối được extension. Hãy tải lại trang.</td></tr>";
           return;
         }
         if (resp.error === "no_token") {
-          tbody.innerHTML = "<tr><td colspan='4' class='state-msg'>Không lấy được token. Vui lòng đăng nhập lại work.hasaki.vn.</td></tr>";
+          tbody.innerHTML = "<tr><td colspan='5' class='state-msg'>Không lấy được token. Vui lòng đăng nhập lại work.hasaki.vn.</td></tr>";
           return;
         }
         if (resp.error) {
-          tbody.innerHTML = "<tr><td colspan='4' class='state-msg'>Đã xảy ra lỗi khi gọi API.</td></tr>";
+          tbody.innerHTML = "<tr><td colspan='5' class='state-msg'>Đã xảy ra lỗi khi gọi API.</td></tr>";
           return;
         }
         renderProfile(resp.profile);

@@ -85,13 +85,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  // Lưu lựa chọn "nửa ngày" theo từng ngày và danh sách dòng hiện tại
+  var halfDayMap = {};
+  var currentRows = [];
+
   // ----- Render bảng + tổng kết -----
   function renderData(data) {
     var tableBody = document.querySelector("#dataTable tbody");
     tableBody.innerHTML = "";
-
-    var totalExcess = 0;
-    var totalShortage = 0;
+    currentRows = [];
     var staffName = "";
 
     if (data.status === 1 && data.data && Array.isArray(data.data.rows)) {
@@ -104,49 +106,24 @@ document.addEventListener('DOMContentLoaded', function() {
         var tr = document.createElement("tr");
         var checkInTime = new Date(row.check_in * 1000).toLocaleString();
         var checkOutTime = row.check_out ? new Date(row.check_out * 1000).toLocaleString() : "Chưa có";
+        var hasCheckout = !!row.check_out;
+        var checkOutCellClass = hasCheckout ? "" : "missing-checkout";
+        var isChecked = halfDayMap[row.date] ? "checked" : "";
+        var cbDisabled = hasCheckout ? "" : "disabled";
 
-        var resultText = "";
-        var resultClass = "";
-        var isWarning = false;
-        var checkOutCellClass = "";
-
-        if (row.check_out) {
-          var rawHours = (row.check_out - row.check_in) / 3600;
-          var effectiveHours = rawHours - 1;
-          var diff = effectiveHours - 8;
-
-          if (diff >= 0) {
-            resultText = "Dư: " + diff.toFixed(2) + " giờ";
-            resultClass = "overtime";
-            totalExcess += diff;
-          } else {
-            resultText = "Thiếu: " + Math.abs(diff).toFixed(2) + " giờ";
-            resultClass = "shortage";
-            totalShortage += Math.abs(diff);
-            isWarning = true;
-          }
-        } else {
-          // Chưa check-out: cảnh báo để người dùng chú ý
-          resultText = "⚠ Chưa check-out";
-          resultClass = "shortage";
-          checkOutCellClass = "missing-checkout";
-          isWarning = true;
-        }
-
-        if (isWarning) {
-          tr.className = "row-warning";
-        }
-
+        // Cột "Kết quả" và class dòng sẽ được điền bởi recalc()
         tr.innerHTML = "<td>" + row.date + "</td>" +
                        "<td>" + checkInTime + "</td>" +
                        "<td class='" + checkOutCellClass + "'>" + checkOutTime + "</td>" +
-                       "<td class='" + resultClass + "'>" + resultText + "</td>";
+                       "<td class='result-cell'></td>" +
+                       "<td class='half-day-cell'><input type='checkbox' class='half-day' data-date='" + row.date + "' " + isChecked + " " + cbDisabled + "></td>";
         tableBody.appendChild(tr);
+        currentRows.push({ row: row, tr: tr });
       });
     } else {
-      var tr = document.createElement("tr");
-      tr.innerHTML = "<td colspan='4' style='text-align:center;'>Không có dữ liệu hiển thị hoặc xảy ra lỗi.</td>";
-      tableBody.appendChild(tr);
+      var trEmpty = document.createElement("tr");
+      trEmpty.innerHTML = "<td colspan='5' style='text-align:center;'>Không có dữ liệu hiển thị hoặc xảy ra lỗi.</td>";
+      tableBody.appendChild(trEmpty);
     }
 
     // Dự phòng: nếu profile chưa trả về tên thì dùng tên từ dữ liệu chấm công
@@ -154,6 +131,55 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!nameEl.textContent && staffName) {
       nameEl.textContent = staffName;
     }
+
+    // Gắn sự kiện cho các checkbox "nửa ngày"
+    tableBody.querySelectorAll(".half-day").forEach(function(cb) {
+      cb.addEventListener("change", function() {
+        halfDayMap[this.getAttribute("data-date")] = this.checked;
+        recalc();
+      });
+    });
+
+    recalc();
+  }
+
+  // Tính lại kết quả từng dòng + tổng kết (chuẩn 8h/ngày, hoặc 4h nếu tick nửa ngày)
+  function recalc() {
+    var totalExcess = 0;
+    var totalShortage = 0;
+
+    currentRows.forEach(function(item) {
+      var row = item.row;
+      var tr = item.tr;
+      var resultCell = tr.querySelector(".result-cell");
+      var resultText = "";
+      var resultClass = "";
+      var isWarning = false;
+
+      if (row.check_out) {
+        var effectiveHours = (row.check_out - row.check_in) / 3600 - 1;
+        var standard = halfDayMap[row.date] ? 4 : 8;
+        var diff = effectiveHours - standard;
+        if (diff >= 0) {
+          resultText = "Dư: " + diff.toFixed(2) + " giờ";
+          resultClass = "overtime";
+          totalExcess += diff;
+        } else {
+          resultText = "Thiếu: " + Math.abs(diff).toFixed(2) + " giờ";
+          resultClass = "shortage";
+          totalShortage += Math.abs(diff);
+          isWarning = true;
+        }
+      } else {
+        resultText = "⚠ Chưa check-out";
+        resultClass = "shortage";
+        isWarning = true;
+      }
+
+      tr.className = isWarning ? "row-warning" : "";
+      resultCell.className = "result-cell " + resultClass;
+      resultCell.textContent = resultText;
+    });
 
     var finalHours = totalExcess - totalShortage;
     var finalClass = finalHours >= 0 ? "positive" : "negative";
@@ -189,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Tải thông tin nhân viên (avatar + tên)
       loadProfile(token);
       var tableBody = document.querySelector("#dataTable tbody");
-      tableBody.innerHTML = "<tr><td colspan='4' id='loadingState'>Đang tải dữ liệu...</td></tr>";
+      tableBody.innerHTML = "<tr><td colspan='5' id='loadingState'>Đang tải dữ liệu...</td></tr>";
       document.getElementById("summary").innerHTML = "";
 
       var apiUrl = "https://wshr.hasaki.vn/api/hr/timesheet/login-user?from_date=" + fromDate + "&to_date=" + toDate;

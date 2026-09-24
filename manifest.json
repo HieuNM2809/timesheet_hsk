@@ -28,7 +28,8 @@
     {
       "matches": [
         "https://test.hasakiexpress.vn/*",
-        "https://hasakiexpress.vn/*"
+        "https://hasakiexpress.vn/*",
+        "https://chat.hasaki.vn/*"
       ],
       "js": ["snow.js"],
       "run_at": "document_idle"

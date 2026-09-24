@@ -4,3 +4,9 @@
 # OS
 Thumbs.db
 .DS_Store
+
+# Archives
+*.rar
+*.zip
+*.crx
+*.pem

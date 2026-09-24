@@ -282,4 +282,18 @@
   });
   closeBtn.addEventListener("click", closePanel);
   viewBtn.addEventListener("click", loadData);
+
+  // Bấm ra ngoài widget -> đóng panel (click trong shadow bị retarget thành host)
+  document.addEventListener("click", function (e) {
+    if (!panel.hidden && !host.contains(e.target)) {
+      closePanel();
+    }
+  });
+
+  // Nhấn Esc -> đóng panel
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !panel.hidden) {
+      closePanel();
+    }
+  });
 })();

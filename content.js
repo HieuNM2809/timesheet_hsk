@@ -37,13 +37,13 @@
     ':host, * { box-sizing: border-box; font-family: "Segoe UI", Roboto, Arial, sans-serif; }' +
     // Nút nổi
     '.fab {' +
-    '  position: fixed; bottom: 24px; right: 24px; z-index: 2147483647;' +
-    '  width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer;' +
-    '  background: linear-gradient(135deg, #007bff, #0056b3); color: #fff; font-size: 24px;' +
-    '  box-shadow: 0 6px 18px rgba(0,123,255,0.45); transition: transform 0.2s, box-shadow 0.2s;' +
+    '  position: fixed; bottom: 180px; right: 26px; z-index: 2147483647;' +
+    '  width: 65px; height: 65px; border-radius: 50%; border: none; cursor: pointer;' +
+    '  background: linear-gradient(135deg, #306e51, #306e51); color: #fff; font-size: 24px;' +
+    '  box-shadow: 0 6px 18px rgb(48 110 81); transition: transform 0.2s, box-shadow 0.2s;' +
     '  display: flex; align-items: center; justify-content: center;' +
     '}' +
-    '.fab:hover { transform: scale(1.08); box-shadow: 0 8px 22px rgba(0,123,255,0.6); }' +
+    '.fab:hover { transform: scale(1.08); box-shadow: 0 8px 22px rgba(48,110,81,0.75); }' +
     // Panel
     '.panel {' +
     '  position: fixed; bottom: 92px; right: 24px; z-index: 2147483647;' +

@@ -90,4 +90,73 @@
   });
 
   requestAnimationFrame(draw);
+
+  // ---------- Trang trí góc phải dưới: cây thông + tuyết rơi nhỏ ----------
+  var deco = document.createElement("div");
+  deco.id = "hsk-xmas-root";
+  deco.style.cssText =
+    "position:fixed;right:16px;bottom:0;z-index:2147483646;" +
+    "pointer-events:none;width:150px;height:210px;";
+  document.documentElement.appendChild(deco);
+  var dshadow = deco.attachShadow({ mode: "open" });
+
+  var lights = "";
+  var lightPos = [
+    [60, 60], [45, 85], [78, 88], [55, 110], [82, 115],
+    [40, 130], [72, 140], [58, 150], [88, 145], [50, 165]
+  ];
+  var lightColors = ["#ff4d4d", "#ffd24d", "#4dff88", "#4dd2ff", "#ff7ae0"];
+  for (var li = 0; li < lightPos.length; li++) {
+    lights += "<circle class='light' cx='" + lightPos[li][0] + "' cy='" + lightPos[li][1] +
+      "' r='3.2' fill='" + lightColors[li % lightColors.length] +
+      "' style='animation-delay:" + (li * 0.18).toFixed(2) + "s'/>";
+  }
+
+  dshadow.innerHTML =
+    "<style>" +
+    ":host, * { box-sizing: border-box; }" +
+    ".wrap { position: relative; width: 150px; height: 210px; }" +
+    ".tree { position: absolute; left: 0; bottom: 0; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.25)); animation: sway 4s ease-in-out infinite; transform-origin: 75px 200px; }" +
+    "@keyframes sway { 0%,100% { transform: rotate(-1.2deg); } 50% { transform: rotate(1.2deg); } }" +
+    ".light { animation: twinkle 1.4s ease-in-out infinite alternate; }" +
+    "@keyframes twinkle { from { opacity: 0.35; } to { opacity: 1; filter: drop-shadow(0 0 3px currentColor); } }" +
+    ".star { animation: glow 2s ease-in-out infinite alternate; transform-origin: center; }" +
+    "@keyframes glow { from { opacity: 0.7; } to { opacity: 1; } }" +
+    // Tuyết rơi nhỏ quanh cây
+    ".snow-local { position: absolute; left: 0; top: 0; width: 150px; height: 210px; overflow: hidden; }" +
+    ".lf { position: absolute; top: -8px; border-radius: 50%; background: #fff; opacity: 0.9; box-shadow: 0 0 3px rgba(255,255,255,0.8); animation: fall linear infinite; }" +
+    "@keyframes fall { 0% { transform: translateY(0) translateX(0); opacity: 0; } 10% { opacity: 0.9; } 100% { transform: translateY(200px) translateX(10px); opacity: 0.2; } }" +
+    "</style>" +
+    "<div class='wrap'>" +
+    "  <div class='snow-local'></div>" +
+    "  <svg class='tree' width='150' height='210' viewBox='0 0 150 210'>" +
+    "    <!-- tuyết đọng dưới gốc -->" +
+    "    <ellipse cx='75' cy='202' rx='62' ry='10' fill='#ffffff' opacity='0.9'/>" +
+    "    <!-- thân cây -->" +
+    "    <rect x='67' y='178' width='16' height='24' rx='2' fill='#7a4a21'/>" +
+    "    <!-- tán lá -->" +
+    "    <polygon points='75,30 112,95 38,95' fill='#2e7d32'/>" +
+    "    <polygon points='75,65 122,140 28,140' fill='#388e3c'/>" +
+    "    <polygon points='75,105 132,182 18,182' fill='#43a047'/>" +
+    "    <!-- viền tuyết trên tán -->" +
+    "    <polygon points='75,30 112,95 38,95' fill='none' stroke='#ffffff' stroke-width='2' opacity='0.35'/>" +
+    "    <!-- ngôi sao -->" +
+    "    <polygon class='star' points='75,10 80,24 95,24 83,33 88,47 75,38 62,47 67,33 55,24 70,24' fill='#ffd700'/>" +
+    lights +
+    "  </svg>" +
+    "</div>";
+
+  // Tạo các bông tuyết rơi nhỏ quanh cây
+  var snowLocal = dshadow.querySelector(".snow-local");
+  for (var s = 0; s < 14; s++) {
+    var lf = document.createElement("span");
+    var size = rand(2, 4);
+    lf.className = "lf";
+    lf.style.left = rand(0, 140) + "px";
+    lf.style.width = size + "px";
+    lf.style.height = size + "px";
+    lf.style.animationDuration = rand(4, 8).toFixed(2) + "s";
+    lf.style.animationDelay = rand(0, 6).toFixed(2) + "s";
+    snowLocal.appendChild(lf);
+  }
 })();

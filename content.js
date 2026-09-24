@@ -63,10 +63,6 @@
     '.profile-header { display: flex; flex-direction: column; align-items: center; margin-bottom: 16px; }' +
     '.staff-avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 3px solid hsl(152, 39%, 31%); box-shadow: 0 3px 10px hsla(152, 39%, 31%, 0.25); margin-bottom: 8px; }' +
     '.staff-name { font-size: 18px; font-weight: 700; color: hsl(152, 39%, 24%); text-align: center; }' +
-    // Đồng hồ giờ hiện tại
-    '.clock { text-align: center; padding: 12px; margin-bottom: 16px; border-radius: 12px; background: linear-gradient(135deg, hsl(152, 39%, 94%), hsl(152, 39%, 98%)); border: 1px solid hsl(152, 39%, 78%); }' +
-    '.clock .clk-time { font-size: 34px; font-weight: 800; color: hsl(152, 39%, 24%); font-variant-numeric: tabular-nums; line-height: 1.1; letter-spacing: 1px; }' +
-    '.clock .clk-date { font-size: 13px; color: #666; margin-top: 4px; }' +
     // Controls
     '.controls { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px; background: #f7f9fc; border-radius: 10px; }' +
     '.field { display: flex; flex-direction: column; }' +
@@ -116,7 +112,6 @@
     '    <img class="staff-avatar" alt="Avatar" style="display:none;">' +
     '    <div class="staff-name"></div>' +
     '  </div>' +
-    '  <div class="clock"></div>' +
     '  <div class="controls">' +
     '    <div class="field"><label>Từ ngày</label><input type="date" class="from-date"></div>' +
     '    <div class="field"><label>Đến ngày</label><input type="date" class="to-date"></div>' +
@@ -140,7 +135,6 @@
   var toInput = shadow.querySelector(".to-date");
   var avatarEl = shadow.querySelector(".staff-avatar");
   var nameEl = shadow.querySelector(".staff-name");
-  var clockEl = shadow.querySelector(".clock");
   var summaryEl = shadow.querySelector(".summary");
   var tbody = shadow.querySelector("tbody");
 
@@ -152,7 +146,6 @@
   // Lưu lựa chọn "nửa ngày" theo từng ngày (giữ khi tải lại cùng kỳ) và danh sách dòng hiện tại
   var halfDayMap = {};
   var currentRows = [];
-  var clockTimer = null;
 
   // ---------- Render ----------
   function renderProfile(profileResp) {
@@ -249,27 +242,6 @@
       "<div class='stat-card final " + finalClass + "'><div class='stat-label'>Giờ cuối cùng</div><div class='stat-value'>" + finalHours.toFixed(2) + "<span class='stat-unit'>giờ</span></div></div>";
   }
 
-  // ---------- Đồng hồ giờ hiện tại ----------
-  function pad2(n) { return n < 10 ? "0" + n : "" + n; }
-  var WEEKDAYS = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
-
-  function updateClock() {
-    var now = new Date();
-    var time = pad2(now.getHours()) + ":" + pad2(now.getMinutes()) + ":" + pad2(now.getSeconds());
-    var date = WEEKDAYS[now.getDay()] + ", " + pad2(now.getDate()) + "/" + pad2(now.getMonth() + 1) + "/" + now.getFullYear();
-    clockEl.innerHTML = "<div class='clk-time'>" + time + "</div><div class='clk-date'>" + date + "</div>";
-  }
-
-  function startClock() {
-    updateClock();
-    if (clockTimer) clearInterval(clockTimer);
-    clockTimer = setInterval(updateClock, 1000);
-  }
-
-  function stopClock() {
-    if (clockTimer) { clearInterval(clockTimer); clockTimer = null; }
-  }
-
   // ---------- Tải dữ liệu ----------
   function loadData() {
     var fromDate = fromInput.value;
@@ -302,11 +274,9 @@
   function openPanel() {
     panel.hidden = false;
     if (!loadedOnce) { loadedOnce = true; loadData(); }
-    startClock();
   }
   function closePanel() {
     panel.hidden = true;
-    stopClock();
   }
 
   fab.addEventListener("click", function () {

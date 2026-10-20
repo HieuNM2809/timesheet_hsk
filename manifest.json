@@ -38,6 +38,13 @@
       "matches": ["https://chat.hasaki.vn/*"],
       "js": ["chat.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://webadmin.system.local/*"],
+      "js": ["webadmin.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
     }
   ]
 }

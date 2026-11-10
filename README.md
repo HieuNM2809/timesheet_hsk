@@ -202,15 +202,3 @@ Thêm một thanh chip ngay **phía trên ô soạn tin**. Bấm một chip là 
 **Cách hoạt động:** ô soạn tin của app là **Quill** (`.ql-editor[contenteditable]`), không phải input thường, nên không gán `value` được. Script dùng `document.execCommand("insertText", ...)` để sinh đúng sự kiện `beforeinput`/`input` cho Quill nhận, đợi Quill xử lý xong (bỏ class `ql-blank`) rồi mới bấm nút gửi `svg[data-testid="SendRoundedIcon"]`.
 
 Giao diện dựng bằng Shadow DOM nên không ảnh hưởng CSS của app. App là SPA nên script dùng `MutationObserver` để gắn lại thanh chip mỗi khi đổi cuộc trò chuyện.
-
-### Double-click để trả lời một tin nhắn
-
-**Double-click vào một tin nhắn** → hiện menu nhỏ liệt kê các câu trong danh sách. Chọn một câu → app sẽ **trả lời (reply) đúng tin nhắn đó**, có trích dẫn.
-
-- Chỉ mở menu thôi thì **chưa gửi gì**. Phải bấm chọn một câu mới gửi.
-- Nhấn **Esc** hoặc bấm ra ngoài để đóng menu.
-- Double-click ra ngoài vùng tin nhắn thì không có gì xảy ra, nên vẫn bôi đen chọn chữ bình thường được.
-
-**Cách hoạt động:** script mô phỏng chuột phải (`contextmenu`) lên tin nhắn để mở menu của app, bấm mục **Trả lời**, đợi app vào chế độ trả lời (xuất hiện `.chat-dashboard__conversation__showmore__reply`) rồi mới chèn câu và bấm gửi. Nếu không vào được chế độ trả lời thì script **dừng lại, không gửi gì** để tránh gửi nhầm.
-
-Khi vào chế độ trả lời, app tự chèn sẵn **mention người gửi** vào ô soạn tin; script chèn câu vào **cuối**, nên tin gửi đi có dạng `@Tên người gửi <câu của bạn>`.

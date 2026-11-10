@@ -1,7 +1,6 @@
 // chat-quick-reply.js - Thanh câu trả lời nhanh cho chat.hasaki.vn
-// 1) Bấm một chip -> chèn câu đó vào ô soạn tin (Quill) rồi tự bấm nút gửi.
-//    An toàn: nếu đang soạn dở thì chỉ chèn chữ, KHÔNG tự gửi.
-// 2) Double-click vào một tin nhắn -> hiện menu chọn câu -> trả lời (reply) chính tin đó.
+// Bấm một chip -> chèn câu đó vào ô soạn tin (Quill) rồi tự bấm nút gửi.
+// An toàn: nếu đang soạn dở thì chỉ chèn chữ, KHÔNG tự gửi.
 (function () {
   if (window.__hskQuickReplyInjected) return;
   window.__hskQuickReplyInjected = true;
@@ -10,10 +9,6 @@
   var EDITOR_SEL = ".ql-editor[contenteditable='true']";
   var BOX_SEL = ".chat-dashboard__conversation__box";
   var SEND_SEL = 'svg[data-testid="SendRoundedIcon"]';
-  // Menu chuột phải của app trên mỗi tin nhắn
-  var MSG_SEL = '[id^="msg-"]';
-  var CTX_ITEM_SEL = ".chat-dashboard__conversation__content__row__option__menu";
-  var REPLY_STATE_SEL = ".chat-dashboard__conversation__showmore__reply";
 
   var DEFAULTS = [
     "Ok ạ",
@@ -68,27 +63,15 @@
     setTimeout(function () { whenQuillReady(ed, done, tries + 1); }, 50);
   }
 
-  // Đặt con trỏ về cuối nội dung rồi chèn chữ
-  function insertAtEnd(ed, text) {
-    ed.focus();
-    try {
-      var sel = window.getSelection();
-      var range = document.createRange();
-      range.selectNodeContents(ed);
-      range.collapse(false);
-      sel.removeAllRanges();
-      sel.addRange(range);
-    } catch (e) {}
-    // execCommand sinh đúng sự kiện beforeinput/input nên Quill (và React) nhận được
-    document.execCommand("insertText", false, text);
-  }
-
   function quickSend(text) {
     var ed = getEditor();
     if (!ed) return;
 
     var wasEmpty = ed.classList.contains("ql-blank") || !ed.innerText.trim();
-    insertAtEnd(ed, text);
+
+    ed.focus();
+    // execCommand sinh đúng sự kiện beforeinput/input nên Quill (và React) nhận được
+    document.execCommand("insertText", false, text);
 
     // Đang soạn dở -> chỉ chèn thêm chữ, không tự gửi để tránh gửi nhầm
     if (!wasEmpty) return;
@@ -97,47 +80,6 @@
       var btn = getSendBtn();
       if (btn) btn.click();
     });
-  }
-
-  // ---------- Trả lời chính một tin nhắn ----------
-  // Mở menu chuột phải của app trên tin đó -> bấm "Trả lời" -> chèn câu -> gửi.
-  // Lưu ý: app tự chèn sẵn mention người gửi vào ô soạn tin khi vào chế độ trả lời.
-  function replyToMessage(msgEl, text) {
-    var r = msgEl.getBoundingClientRect();
-    msgEl.dispatchEvent(new MouseEvent("contextmenu", {
-      bubbles: true, cancelable: true, view: window,
-      clientX: r.left + Math.min(20, r.width / 2), clientY: r.top + Math.min(10, r.height / 2), button: 2
-    }));
-
-    setTimeout(function () {
-      var item = null;
-      var items = document.querySelectorAll(CTX_ITEM_SEL);
-      for (var i = 0; i < items.length; i++) {
-        if ((items[i].textContent || "").trim() === "Trả lời") { item = items[i]; break; }
-      }
-      if (!item) return;            // không thấy mục Trả lời -> bỏ qua, không gửi gì
-      item.click();
-
-      // Đợi app vào chế độ trả lời rồi mới chèn chữ
-      waitFor(function () { return document.querySelector(REPLY_STATE_SEL); }, function (ok) {
-        if (!ok) return;            // không vào được chế độ trả lời -> dừng, tránh gửi nhầm
-        var ed = getEditor();
-        if (!ed) return;
-        insertAtEnd(ed, text);
-        setTimeout(function () {
-          var btn = getSendBtn();
-          if (btn) btn.click();
-        }, 180);
-      });
-    }, 160);
-  }
-
-  // Chờ tới khi điều kiện đúng (tối đa ~1.5s)
-  function waitFor(cond, done, tries) {
-    tries = tries || 0;
-    if (cond()) { done(true); return; }
-    if (tries >= 30) { done(false); return; }
-    setTimeout(function () { waitFor(cond, done, tries + 1); }, 50);
   }
 
   // ---------- Giao diện ----------
@@ -182,23 +124,6 @@
     '.reset:hover { color: #dc3545; border-color: #dc3545; }' +
     '.close { margin-left: auto; background: none; border: none; color: #999; font-size: 18px; cursor: pointer; padding: 0 4px; }' +
     '.close:hover { color: #dc3545; }';
-
-  // Menu hiện khi double-click vào tin nhắn
-  var MENU_CSS =
-    ':host, * { box-sizing: border-box; font-family: "Segoe UI", Roboto, Arial, sans-serif; }' +
-    '.menu {' +
-    '  position: fixed; z-index: 2147483647; min-width: 190px; max-width: 320px;' +
-    '  background: #fff; border: 1px solid #e3e8ef; border-radius: 10px; padding: 6px;' +
-    '  box-shadow: 0 10px 30px rgba(0,0,0,0.2);' +
-    '}' +
-    '.head { font-size: 11px; color: #888; padding: 4px 8px 6px; border-bottom: 1px solid #eef0f3; margin-bottom: 4px; }' +
-    '.head b { color: hsl(152, 39%, 24%); }' +
-    '.opt {' +
-    '  display: block; width: 100%; text-align: left; border: none; background: none;' +
-    '  padding: 7px 9px; border-radius: 6px; font-size: 13px; color: #333; cursor: pointer;' +
-    '  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' +
-    '}' +
-    '.opt:hover { background: hsl(152, 39%, 94%); color: hsl(152, 39%, 24%); font-weight: 600; }';
 
   function buildUi() {
     host = document.createElement("div");
@@ -306,80 +231,6 @@
     if (!host) buildUi();
     box.parentElement.insertBefore(host, box);
   }
-
-  // ---------- Menu chọn câu khi double-click vào tin nhắn ----------
-  var menuHost = null, menuShadow = null;
-
-  function buildMenu() {
-    menuHost = document.createElement("div");
-    menuHost.id = "hsk-quick-reply-menu";
-    menuShadow = menuHost.attachShadow({ mode: "open" });
-    var st = document.createElement("style");
-    st.textContent = MENU_CSS;
-    menuShadow.appendChild(st);
-    document.documentElement.appendChild(menuHost);
-  }
-
-  function closeMenu() {
-    if (menuShadow) {
-      var m = menuShadow.querySelector(".menu");
-      if (m) m.remove();
-    }
-  }
-
-  function openMenu(x, y, msgEl) {
-    if (!menuHost) buildMenu();
-    closeMenu();
-
-    var menu = document.createElement("div");
-    menu.className = "menu";
-
-    var head = document.createElement("div");
-    head.className = "head";
-    var who = (msgEl.innerText || "").trim().replace(/\s+/g, " ").slice(0, 34);
-    head.innerHTML = "Trả lời: <b></b>";
-    head.querySelector("b").textContent = who + (who.length >= 34 ? "…" : "");
-    menu.appendChild(head);
-
-    replies.forEach(function (text) {
-      var opt = document.createElement("button");
-      opt.className = "opt";
-      opt.textContent = text;
-      opt.title = text;
-      opt.addEventListener("click", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        closeMenu();
-        replyToMessage(msgEl, text);
-      });
-      menu.appendChild(opt);
-    });
-
-    menuShadow.appendChild(menu);
-
-    // Giữ menu trong màn hình
-    var r = menu.getBoundingClientRect();
-    var left = Math.min(x, window.innerWidth - r.width - 8);
-    var top = Math.min(y, window.innerHeight - r.height - 8);
-    menu.style.left = Math.max(8, left) + "px";
-    menu.style.top = Math.max(8, top) + "px";
-  }
-
-  // Double-click vào tin nhắn -> mở menu (không gửi gì cho tới khi chọn câu)
-  document.addEventListener("dblclick", function (e) {
-    var msgEl = e.target && e.target.closest ? e.target.closest(MSG_SEL) : null;
-    if (!msgEl) { closeMenu(); return; }
-    if (!document.querySelector(BOX_SEL)) return;   // không có ô soạn tin thì bỏ qua
-    openMenu(e.clientX, e.clientY, msgEl);
-  });
-
-  document.addEventListener("click", function (e) {
-    if (menuHost && !menuHost.contains(e.target)) closeMenu();
-  }, true);
-
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") closeMenu();
-  });
 
   loadReplies(function () {
     attach();

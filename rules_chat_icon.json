@@ -1,0 +1,28 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": { "extensionPath": "/chat-icon-192.png" }
+    },
+    "condition": {
+      "requestDomains": ["chat.hasaki.vn"],
+      "urlFilter": "/logo192.png",
+      "resourceTypes": ["image", "other", "xmlhttprequest", "main_frame", "sub_frame", "media"]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": { "extensionPath": "/chat-icon-512.png" }
+    },
+    "condition": {
+      "requestDomains": ["chat.hasaki.vn"],
+      "urlFilter": "/logo512.png",
+      "resourceTypes": ["image", "other", "xmlhttprequest", "main_frame", "sub_frame", "media"]
+    }
+  }
+]

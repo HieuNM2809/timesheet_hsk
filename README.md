@@ -89,6 +89,7 @@ Kết quả dòng đó và toàn bộ tổng kết được **tính lại ngay**
 | `popup.js` | Logic popup: đọc cookie qua `chrome.cookies`, gọi API, tính giờ, render, xử lý nút chọn lại tháng. |
 | `snow.js` | Hiệu ứng tuyết + trang trí lễ hội trên `hasakiexpress.vn`, `test.hasakiexpress.vn`, `chat.hasaki.vn`. |
 | `chat.js` | Bỏ chữ "(UTC+7)" trên `chat.hasaki.vn`. |
+| `rules_chat_icon.json` + `chat-icon-*.png` | Thay icon PWA của `chat.hasaki.vn` khi cài app (xem mục 10). |
 | `webadmin.js` | Nút đổi domain/port cho request API trên `webadmin.system.local` (xem mục 9). |
 | `checkin.png` | Icon của extension. |
 
@@ -146,3 +147,40 @@ Chỉ trên `http://webadmin.system.local`, extension hiện thêm một nút tr
 - Trang `https` gọi sang `http` sẽ bị chặn vì mixed content. Gọi từ domain sang `localhost` có thể bị Chrome chặn bởi Local Network Access: cho phép khi Chrome hỏi, hoặc backend trả thêm `Access-Control-Allow-Private-Network: true`.
 
 **Giới hạn:** không đổi WebSocket, EventSource, `navigator.sendBeacon` và request trong Web Worker/Service Worker. Nếu trang gọi `localStorage.clear()` (ví dụ khi đăng xuất) thì cấu hình cũng bị xoá.
+
+---
+
+## 10. Đổi icon app Hasaki Chat khi cài trên Windows
+
+**Vấn đề:** trang `chat.hasaki.vn` vẫn dùng `manifest.json` mặc định của Create React App. Hai icon `logo192.png` và `logo512.png` chưa được thay nên vẫn là **logo React**. Khi cài app lên Windows, Chrome lấy icon từ manifest nên shortcut hiện logo React thay vì logo Hasaki.
+
+**Cách extension xử lý:** dùng `declarativeNetRequest` chuyển hướng 2 request ảnh đó sang icon đóng gói sẵn trong extension:
+
+| Request | Thay bằng |
+|---|---|
+| `https://chat.hasaki.vn/logo192.png` | `chat-icon-192.png` |
+| `https://chat.hasaki.vn/logo512.png` | `chat-icon-512.png` |
+
+Cách này **không đụng vào `manifest.json` của trang**, chỉ thay nội dung ảnh, nên khả năng cài PWA và `start_url` giữ nguyên như cũ. `favicon.png` (icon ở tab trình duyệt) cũng không bị ảnh hưởng vì vốn đã đúng logo Hasaki.
+
+**Cách áp dụng:**
+1. Vào `chrome://extensions`, bấm **Reload** extension.
+2. Nếu đã cài app Hasaki Chat trước đó: **gỡ app cũ** (chuột phải icon > Uninstall, hoặc trong `chrome://apps`).
+3. Mở `https://chat.hasaki.vn/chat/welcome`, nhấn **Ctrl + Shift + R** để xoá cache ảnh cũ.
+4. Cài lại app từ nút cài trên thanh địa chỉ. Icon mới sẽ xuất hiện.
+
+**Đổi sang icon khác:** chỉ cần thay 2 file `chat-icon-192.png` và `chat-icon-512.png` (đúng kích thước 192x192 và 512x512), rồi Reload extension.
+
+**Hạn chế:** cách này chỉ có tác dụng trên máy đã cài extension. Tên app vẫn là **"React App"** vì nằm trong `manifest.json` của trang, extension không sửa được mà không ảnh hưởng tới khả năng cài đặt.
+
+**Cách sửa triệt để (nên làm):** trong source frontend của Hasaki Chat, thay 2 file `public/logo192.png`, `public/logo512.png` và sửa `public/manifest.json`:
+
+```json
+{
+  "short_name": "Hasaki Chat",
+  "name": "Hasaki Chat",
+  ...
+}
+```
+
+Sau khi deploy, mọi người đều có icon và tên đúng, không cần extension.

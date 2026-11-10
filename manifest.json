@@ -13,11 +13,28 @@
   "permissions": [
     "storage",
     "tabs",
-    "cookies"
+    "cookies",
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "https://wshr.hasaki.vn/",
-    "https://work.hasaki.vn/*"
+    "https://work.hasaki.vn/*",
+    "https://chat.hasaki.vn/*"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "chat_icon",
+        "enabled": true,
+        "path": "rules_chat_icon.json"
+      }
+    ]
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["chat-icon-192.png", "chat-icon-512.png"],
+      "matches": ["https://chat.hasaki.vn/*"]
+    }
   ],
   "content_scripts": [
     {

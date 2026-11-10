@@ -10,3 +10,6 @@ Thumbs.db
 *.zip
 *.crx
 *.pem
+
+# Chrome sinh ra khi nạp extension (cache ruleset declarativeNetRequest)
+_metadata/

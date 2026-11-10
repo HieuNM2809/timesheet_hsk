@@ -53,7 +53,7 @@
     },
     {
       "matches": ["https://chat.hasaki.vn/*"],
-      "js": ["chat.js"],
+      "js": ["chat.js", "chat-quick-reply.js"],
       "run_at": "document_idle"
     },
     {

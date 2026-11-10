@@ -89,6 +89,7 @@ Kết quả dòng đó và toàn bộ tổng kết được **tính lại ngay**
 | `popup.js` | Logic popup: đọc cookie qua `chrome.cookies`, gọi API, tính giờ, render, xử lý nút chọn lại tháng. |
 | `snow.js` | Hiệu ứng tuyết + trang trí lễ hội trên `hasakiexpress.vn`, `test.hasakiexpress.vn`, `chat.hasaki.vn`. |
 | `chat.js` | Bỏ chữ "(UTC+7)" trên `chat.hasaki.vn`. |
+| `chat-quick-reply.js` | Thanh câu trả lời nhanh trên `chat.hasaki.vn` (xem mục 11). |
 | `rules_chat_icon.json` + `chat-icon-*.png` | Thay icon PWA của `chat.hasaki.vn` khi cài app (xem mục 10). |
 | `webadmin.js` | Nút đổi domain/port cho request API trên `webadmin.system.local` (xem mục 9). |
 | `checkin.png` | Icon của extension. |
@@ -184,3 +185,20 @@ Cách này **không đụng vào `manifest.json` của trang**, chỉ thay nội
 ```
 
 Sau khi deploy, mọi người đều có icon và tên đúng, không cần extension.
+
+---
+
+## 11. Câu trả lời nhanh trên Hasaki Chat
+
+Thêm một thanh chip ngay **phía trên ô soạn tin**. Bấm một chip là câu đó được gửi ngay, không cần gõ.
+
+**Cách dùng:**
+- Bấm chip → chèn câu vào ô soạn tin rồi tự bấm nút gửi.
+- Bấm **✏️ Sửa** → mở bảng chỉnh danh sách, **mỗi dòng là một câu**. Bấm **Lưu** để áp dụng, **Mặc định** để khôi phục danh sách ban đầu.
+- Danh sách lưu trong `chrome.storage.local` (key `hsk_quick_replies`) nên vẫn còn sau khi tải lại trang.
+
+**Quy tắc an toàn:** nếu ô soạn tin **đang có chữ dở**, bấm chip chỉ **chèn thêm chữ** chứ **không tự gửi** — tránh gửi nhầm tin đang viết.
+
+**Cách hoạt động:** ô soạn tin của app là **Quill** (`.ql-editor[contenteditable]`), không phải input thường, nên không gán `value` được. Script dùng `document.execCommand("insertText", ...)` để sinh đúng sự kiện `beforeinput`/`input` cho Quill nhận, đợi Quill xử lý xong (bỏ class `ql-blank`) rồi mới bấm nút gửi `svg[data-testid="SendRoundedIcon"]`.
+
+Giao diện dựng bằng Shadow DOM nên không ảnh hưởng CSS của app. App là SPA nên script dùng `MutationObserver` để gắn lại thanh chip mỗi khi đổi cuộc trò chuyện.

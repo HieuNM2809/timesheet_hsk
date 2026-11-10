@@ -13,3 +13,6 @@ Thumbs.db
 
 # Chrome sinh ra khi nạp extension (cache ruleset declarativeNetRequest)
 _metadata/
+
+# Playwright MCP sinh ra khi khảo sát trang
+.playwright-mcp/

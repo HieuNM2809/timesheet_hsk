@@ -243,13 +243,16 @@ Header auth lấy từ `localStorage`: `authorization: Bearer <accessToken>` và
 
 ## 13. Sắp xếp tab "Đánh dấu" trên Hasaki Chat
 
-Trong tab **Đánh dấu**, phía trên danh sách có thanh **Sắp xếp: Mặc định · Ngày · Người gửi · Nhóm**.
+Trong tab **Đánh dấu**, phía trên danh sách có thanh **Sắp xếp: Mặc định · Ngày · Người gửi · Nhóm · Tuỳ chỉnh**.
 
 - Bấm một tiêu chí để sắp xếp; **bấm lại tiêu chí đang chọn để đổi chiều** (mũi tên ↑/↓ cho biết tăng/giảm dần).
 - Mặc định của từng tiêu chí: Ngày giảm dần (mới nhất trước), Người gửi và Nhóm tăng dần (A→Z, so sánh theo tiếng Việt).
-- **Mặc định** trả về thứ tự gốc của app.
-- Lựa chọn lưu trong `chrome.storage.local` (key `hsk_bookmark_sort`), giữ nguyên khi tải lại trang.
+- **Tuỳ chỉnh**: **kéo thả** từng item để xếp thứ tự riêng của bạn (có vạch xanh báo vị trí thả). Thứ tự này được lưu lại; bookmark mới chưa xếp sẽ hiện ở **đầu** danh sách để bạn kéo vào chỗ muốn. Chuyển sang tiêu chí khác rồi quay lại vẫn giữ nguyên thứ tự đã kéo.
+- **Mặc định** trả về thứ tự gốc của app (thứ tự kéo thả vẫn được giữ trong bộ nhớ).
+- Lựa chọn và thứ tự kéo thả lưu trong `chrome.storage.local` (key `hsk_bookmark_sort`), giữ nguyên khi tải lại trang. Đây là sắp xếp **cá nhân trên máy này**, không ảnh hưởng người khác.
 
 **Cách hoạt động:** danh sách của app là flex column, script chỉ gán CSS `order` cho từng item chứ **không dời node trong DOM**, nên React vẫn quản lý danh sách bình thường, không xung đột. Thanh sắp xếp được chèn làm item đầu tiên của danh sách (dính ở trên khi cuộn) và tự ẩn khi chuyển sang tab khác; `MutationObserver` gắn lại và sắp xếp lại khi app tải thêm hoặc dựng lại danh sách.
 
-**Giới hạn:** DOM chỉ hiển thị ngày `dd/mm/yyyy` (không có giờ), nên các tin **cùng ngày** giữ nguyên thứ tự gốc của app.
+**Giới hạn:**
+- DOM chỉ hiển thị ngày `dd/mm/yyyy` (không có giờ), nên các tin **cùng ngày** giữ nguyên thứ tự gốc của app.
+- Item không có id trong DOM, nên thứ tự kéo thả được nhớ theo khoá tạo từ **người gửi | nội dung | ngày | nhóm** (trùng nhau thì đánh số #1, #2…). Nếu app đổi cách hiển thị nội dung của một bookmark, item đó được coi là mới và quay lên đầu.

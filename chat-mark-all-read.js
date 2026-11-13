@@ -65,6 +65,10 @@
     var nativeSend = NativeWS.prototype.send;
     NativeWS.prototype.send = function () {
       if (sockets.indexOf(this) === -1) track(this);
+      // Socket đang đóng/đã đóng: theo spec trình duyệt chỉ bỏ dữ liệu và log
+      // "WebSocket is already in CLOSING or CLOSED state". Bỏ qua ở đây để lỗi đó
+      // (do app gửi ping lúc mất kết nối) không bị Chrome gán cho extension.
+      if (this.readyState === 2 || this.readyState === 3) return;
       return nativeSend.apply(this, arguments);
     };
   }

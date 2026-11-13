@@ -62,6 +62,12 @@
       "run_at": "document_start",
       "all_frames": true,
       "world": "MAIN"
+    },
+    {
+      "matches": ["https://chat.hasaki.vn/*"],
+      "js": ["chat-mark-all-read.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
     }
   ]
 }

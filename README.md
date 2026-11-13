@@ -90,6 +90,7 @@ Kết quả dòng đó và toàn bộ tổng kết được **tính lại ngay**
 | `snow.js` | Hiệu ứng tuyết + trang trí lễ hội trên `hasakiexpress.vn`, `test.hasakiexpress.vn`, `chat.hasaki.vn`. |
 | `chat.js` | Bỏ chữ "(UTC+7)" trên `chat.hasaki.vn`. |
 | `chat-quick-reply.js` | Thanh câu trả lời nhanh trên `chat.hasaki.vn` (xem mục 11). |
+| `chat-mark-all-read.js` | Nút "Đọc tất cả" trên danh sách hội thoại `chat.hasaki.vn` (xem mục 12). |
 | `rules_chat_icon.json` + `chat-icon-*.png` | Thay icon PWA của `chat.hasaki.vn` khi cài app (xem mục 10). |
 | `webadmin.js` | Nút đổi domain/port cho request API trên `webadmin.system.local` (xem mục 9). |
 | `checkin.png` | Icon của extension. |
@@ -202,3 +203,37 @@ Thêm một thanh chip ngay **phía trên ô soạn tin**. Bấm một chip là 
 **Cách hoạt động:** ô soạn tin của app là **Quill** (`.ql-editor[contenteditable]`), không phải input thường, nên không gán `value` được. Script dùng `document.execCommand("insertText", ...)` để sinh đúng sự kiện `beforeinput`/`input` cho Quill nhận, đợi Quill xử lý xong (bỏ class `ql-blank`) rồi mới bấm nút gửi `svg[data-testid="SendRoundedIcon"]`.
 
 Giao diện dựng bằng Shadow DOM nên không ảnh hưởng CSS của app. App là SPA nên script dùng `MutationObserver` để gắn lại thanh chip mỗi khi đổi cuộc trò chuyện.
+
+---
+
+## 12. Nút "Đọc tất cả" trên Hasaki Chat
+
+Trên header danh sách hội thoại (cạnh tiêu đề **Cuộc trò chuyện**) có nút **✓ Đọc tất cả**. Bấm một lần để đánh dấu đã đọc **toàn bộ** hội thoại còn tin chưa đọc; badge số chưa đọc trên danh sách biến mất ngay, không cần tải lại trang.
+
+**Trạng thái:** khi chạy, nút chuyển sang loading và hiện tiến độ (`Đang đánh dấu 3/10: <tên nhóm>`). Xong sẽ báo `Đã đánh dấu đã đọc N/M hội thoại`; nếu có hội thoại lỗi (server từ chối, không nhận được ack…) thì liệt kê từng nhóm kèm lý do.
+
+**Cơ chế (tái sử dụng đúng cách app đang làm):** khảo sát app thật cho thấy khi mở một nhóm và cuộn tới cuối, app **không gọi REST** mà gửi qua WebSocket `wss://apichat-ws.hasakichat.com/` (giao thức textroom):
+
+```
+{"request":"jointextroom","room":<id>,"transaction":<tx>,"ack":false}
+{"textroom":"message","room":<id>,"transaction":<tx>,"ack":true,
+ "text":"{\"update_seen_id\":<id tin mới nhất>,\"partner_id\":1,\"partner_user_id\":\"…\",\"time\":<thời gian tin>,
+          \"room\":<id>,\"device_name\":\"SGU-1-…\",\"platform\":\"web\",\"event\":\"seen\"}"}
+{"request":"leavetextroom","room":<id>,"transaction":<tx>,"ack":false}
+```
+
+Server trả `{"textroom":"success","event":"seen","transaction":<tx>}` và phát `sync_seen`; app nhận lại và tự xoá badge. Script làm đúng chuỗi này cho từng room:
+
+1. Lấy danh sách room chưa đọc bằng `GET /api/v2/room/scroll?un_seen=true` (phân trang `last_anchor`), trường `last_message_id`/`last_time` là **tin mới nhất** của room.
+2. Gửi `seen` với `update_seen_id = last_message_id` qua **chính socket app đang dùng** (script chạy ở MAIN world từ `document_start` để bọc `WebSocket` và giữ tham chiếu socket).
+3. Chờ ack theo `transaction` (timeout 5s), rồi kiểm tra lại bằng `GET /api/v2/room/unseen/scroll`.
+4. App tự cập nhật badge khi nhận `sync_seen`; script còn xoá badge trong DOM như lớp dự phòng cho room đã xác nhận về 0.
+
+Header auth lấy từ `localStorage`: `authorization: Bearer <accessToken>` và `auth-token: <authToken>`.
+
+**Lưu ý:**
+- Backend **không có endpoint "đọc tất cả"** (không thấy trong traffic), nên gửi từng room; 10 room mất khoảng 2–3 giây.
+- Gửi `update_seen_id` là tin **cũ** sẽ chỉ đánh dấu tới tin đó (đúng như app khi chưa cuộn tới cuối). `GET /api/v2/room/unseen/scroll` trả `last_message_id` là **tin mình đã xem cuối**, không phải tin mới nhất — đừng dùng nhầm.
+- Số trên tab **"Chờ xử lý"** không phải số hội thoại chưa đọc (thực tế có 10 hội thoại chưa đọc nhưng tab hiện 60+), nên nút này không làm số đó về 0.
+- Cần socket của app đang mở; nếu bấm ngay khi trang vừa tải mà chưa kết nối, script chờ tối đa 8s rồi báo lỗi.
+- Debug trong console: `__hskMarkAllReadDebug()` (socket đã bắt được chưa) và `__hskMarkAllRead()` (chạy không cần nút).

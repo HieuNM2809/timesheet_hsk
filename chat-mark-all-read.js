@@ -359,14 +359,22 @@
     return null;
   }
 
+  var titleEl = null;
+
   function attach() {
-    if (host && document.contains(host)) return;
+    if (host && document.contains(host)) {
+      if (titleEl && titleEl.style.display !== "none") titleEl.style.display = "none";
+      return;
+    }
     var h = findHeaderRow();
     if (!h) return;
     if (!host) buildUi();
     // Chèn ngay sau tiêu đề, trước nút "Tải App"
     if (h.title.parentElement === h.row) h.row.insertBefore(host, h.title.nextSibling);
     else h.row.appendChild(host);
+    // Ẩn chữ "Cuộc trò chuyện" cho header gọn (chỉ ẩn, không xoá để app không lỗi)
+    titleEl = h.title;
+    titleEl.style.display = "none";
   }
 
   function init() {

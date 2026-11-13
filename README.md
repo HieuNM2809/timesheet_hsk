@@ -208,7 +208,7 @@ Giao diện dựng bằng Shadow DOM nên không ảnh hưởng CSS của app. A
 
 ## 12. Nút "Đọc tất cả" trên Hasaki Chat
 
-Trên header danh sách hội thoại (cạnh tiêu đề **Cuộc trò chuyện**) có nút **✓ Đọc tất cả**. Bấm một lần để đánh dấu đã đọc **toàn bộ** hội thoại còn tin chưa đọc; badge số chưa đọc trên danh sách biến mất ngay, không cần tải lại trang.
+Trên header danh sách hội thoại có nút **✓ Đọc tất cả** (chữ "Cuộc trò chuyện" được ẩn đi cho header gọn). Bấm một lần để đánh dấu đã đọc **toàn bộ** hội thoại còn tin chưa đọc; badge số chưa đọc trên danh sách biến mất ngay, không cần tải lại trang.
 
 **Trạng thái:** khi chạy, nút chuyển sang loading và hiện tiến độ (`Đang đánh dấu 3/10: <tên nhóm>`). Xong sẽ báo `Đã đánh dấu đã đọc N/M hội thoại`; nếu có hội thoại lỗi (server từ chối, không nhận được ack…) thì liệt kê từng nhóm kèm lý do.
 

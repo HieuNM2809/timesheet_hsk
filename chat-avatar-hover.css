@@ -1,0 +1,37 @@
+/* chat-avatar-hover.css - Phóng to mượt ảnh avatar khi rê chuột trên chat.hasaki.vn
+ *
+ * App dùng MUI Avatar cho toàn bộ ảnh avatar (danh sách hội thoại, thành viên, tin nhắn,
+ * header hội thoại, tab Đánh dấu):
+ *   .MuiAvatar-root  = khung, sẵn có overflow:hidden + border-radius:50%
+ *   .MuiAvatar-img   = ảnh bên trong, sẵn có object-fit:cover
+ *
+ * Nên chỉ cần scale ẢNH BÊN TRONG khung: khung giữ nguyên kích thước và bo tròn,
+ * ảnh phóng to bị cắt gọn trong khung -> không tràn ra ngoài, không xê dịch layout,
+ * tỷ lệ ảnh giữ nguyên nhờ object-fit: cover.
+ *
+ * Selector dùng 2 cấp (.MuiAvatar-root .MuiAvatar-img) để thắng độ ưu tiên của
+ * class do emotion sinh ra (vd .css-1hy9t21, chỉ 1 cấp).
+ *
+ * Không áp dụng cho avatar dạng chữ/số (.styles_hsk-avatar__alphabet__*): đó là badge
+ * đếm thành viên, không phải ảnh, và khung của nó overflow:visible nên scale sẽ bị tràn.
+ */
+
+/* Chắc chắn ảnh phóng to luôn bị cắt gọn trong khung tròn */
+.MuiAvatar-root {
+  overflow: hidden;
+}
+
+.MuiAvatar-root .MuiAvatar-img {
+  transition: transform 0.3s ease;
+}
+
+.MuiAvatar-root:hover .MuiAvatar-img {
+  transform: scale(1.1);
+}
+
+/* Tôn trọng tuỳ chọn giảm chuyển động của hệ điều hành */
+@media (prefers-reduced-motion: reduce) {
+  .MuiAvatar-root .MuiAvatar-img {
+    transition: none;
+  }
+}

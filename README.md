@@ -92,6 +92,7 @@ Kết quả dòng đó và toàn bộ tổng kết được **tính lại ngay**
 | `chat-quick-reply.js` | Thanh câu trả lời nhanh trên `chat.hasaki.vn` (xem mục 11). |
 | `chat-mark-all-read.js` | Nút "Đọc tất cả" trên danh sách hội thoại `chat.hasaki.vn` (xem mục 12). |
 | `chat-bookmark-sort.js` | Thanh sắp xếp cho tab "Đánh dấu" trên `chat.hasaki.vn` (xem mục 13). |
+| `chat-avatar-hover.css` | Hiệu ứng phóng to avatar khi rê chuột trên `chat.hasaki.vn` (xem mục 14). |
 | `rules_chat_icon.json` + `chat-icon-*.png` | Thay icon PWA của `chat.hasaki.vn` khi cài app (xem mục 10). |
 | `webadmin.js` | Nút đổi domain/port cho request API trên `webadmin.system.local` (xem mục 9). |
 | `checkin.png` | Icon của extension. |
@@ -256,3 +257,34 @@ Trong tab **Đánh dấu**, phía trên danh sách có thanh **Sắp xếp: Mặ
 **Giới hạn:**
 - DOM chỉ hiển thị ngày `dd/mm/yyyy` (không có giờ), nên các tin **cùng ngày** giữ nguyên thứ tự gốc của app.
 - Item không có id trong DOM, nên thứ tự kéo thả được nhớ theo khoá tạo từ **người gửi | nội dung | ngày | nhóm** (trùng nhau thì đánh số #1, #2…). Nếu app đổi cách hiển thị nội dung của một bookmark, item đó được coi là mới và quay lên đầu.
+
+---
+
+## 14. Phóng to avatar khi rê chuột trên Hasaki Chat
+
+Rê chuột vào bất kỳ ảnh avatar nào (danh sách hội thoại, danh sách thành viên, avatar trong tin nhắn, header hội thoại, tab Đánh dấu) thì ảnh **phóng to mượt lên 1.1 lần** trong 0.3 giây; rời chuột thì thu lại.
+
+**Cách làm:** app dùng **MUI Avatar** cho toàn bộ avatar (đã kiểm chứng: 120/120 ảnh avatar nằm trong `.MuiAvatar-root`):
+
+| Phần tử | Vốn đã có |
+|---|---|
+| `.MuiAvatar-root` (khung) | `overflow: hidden`, `border-radius: 50%` |
+| `.MuiAvatar-img` (ảnh) | `object-fit: cover` |
+
+Vì vậy chỉ cần **scale ảnh bên trong khung**, khung giữ nguyên kích thước:
+
+```css
+.MuiAvatar-root { overflow: hidden; }
+.MuiAvatar-root .MuiAvatar-img { transition: transform 0.3s ease; }
+.MuiAvatar-root:hover .MuiAvatar-img { transform: scale(1.1); }
+```
+
+- Ảnh phóng to bị **cắt gọn trong khung tròn**, không tràn ra ngoài.
+- Khung không đổi kích thước nên **không xê dịch layout** của danh sách.
+- Tỷ lệ ảnh giữ nguyên nhờ `object-fit: cover`, bo tròn giữ nguyên.
+- Selector dùng **2 cấp** để thắng độ ưu tiên của class do emotion sinh ra (vd `.css-1hy9t21` chỉ 1 cấp).
+- Có `@media (prefers-reduced-motion: reduce)` để tắt chuyển động nếu hệ điều hành yêu cầu.
+
+File là **CSS thuần**, khai báo qua `content_scripts.css` trong manifest nên không cần JS và tự áp dụng cho cả phần tử mới do app render thêm.
+
+**Không áp dụng cho** badge số đếm thành viên (`.styles_hsk-avatar__alphabet__*`): đó không phải ảnh và khung của nó `overflow: visible` nên scale sẽ bị tràn.

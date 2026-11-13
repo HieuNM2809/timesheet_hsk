@@ -1,0 +1,1160 @@
+/* ============================================================================
+   chat-theme.css — Chủ đề giao diện cho https://chat.hasaki.vn
+   ----------------------------------------------------------------------------
+   Mục tiêu:
+     1. Một bảng màu thống nhất (CSS variables) theo nhận diện Hasaki.
+     2. Bong bóng tin nhắn của MÌNH và của NGƯỜI KHÁC / BOT phân biệt rõ ràng,
+        tương phản chữ/nền đạt WCAG AA (>= 4.5:1).
+     3. Thống nhất font-size, line-height, padding, margin, border-radius.
+     4. Hover / focus / active nhẹ nhàng + thanh cuộn tuỳ chỉnh.
+     5. Responsive cho mobile và desktop.
+
+   Nguyên tắc:
+     - CHỈ sửa CSS. Không đụng vào HTML hay logic của app.
+     - Dùng `!important` vì CSS của content script được chèn TRƯỚC stylesheet
+       của trang, nên nếu không có `!important` thì rule của app sẽ thắng.
+     - App dùng CSS Modules (tên class có hash, ví dụ `chat-group_chat-item__RsOiz`).
+       Hash đổi mỗi lần deploy, nên luôn chọn bằng `[class*="..."]` để không vỡ.
+
+   Tham chiếu nhanh (đo từ app thật):
+     - Xanh chủ đạo cũ: #306E51   (taskbar, nút)
+     - Nền bóng của mình cũ: #DDF0E7 | của người khác: #F0F2F5
+     - Chữ phụ cũ: #999 (2.85:1 — TRƯỢT AA), #808080 (3.95:1 — TRƯỢT)
+     - Link cũ: #1890FF (3.24:1 — TRƯỢT), tag mention cũ: #FD6600 (2.97:1 — TRƯỢT)
+   ========================================================================== */
+
+/* ============================================================================
+   1. BẢNG MÀU & TOKEN
+   ==========================================================================*/
+:root {
+  /* --- Xanh thương hiệu Hasaki (hue 152, giữ nguyên #306E51 làm gốc) ------ */
+  --hsk-primary:          hsl(152, 39%, 31%);  /* #306E51 — xanh chủ đạo      */
+  --hsk-primary-hover:    hsl(152, 42%, 36%);  /* #35825E — hover trên nền xanh */
+  --hsk-primary-strong:   hsl(152, 46%, 25%);  /* #225D42 — chữ xanh trên nền trắng */
+  --hsk-primary-deep:     hsl(152, 52%, 18%);  /* #16462F — active / nhấn mạnh */
+  --hsk-primary-soft:     hsl(152, 42%, 91%);  /* #DEF2E9 — nền header, chip   */
+  --hsk-primary-tint:     hsl(152, 44%, 96%);  /* #F0F9F5 — nền hover rất nhạt */
+  --hsk-primary-ghost:    hsla(152, 42%, 36%, 0.10); /* lớp phủ hover          */
+
+  /* --- Trung tính (ngả xanh nhẹ để không "chửi" nhau với màu thương hiệu) - */
+  --hsk-white:            #ffffff;
+  --hsk-surface:          hsl(150, 16%, 97%);  /* #F6F9F7 — nền phụ, thanh ghim */
+  --hsk-surface-2:        hsl(150, 14%, 94%);  /* #EDF1EF — ô input, nền chìm  */
+  --hsk-border:           hsl(150, 12%, 88%);  /* #DDE4E0 — viền mặc định      */
+  --hsk-border-strong:    hsl(150, 12%, 80%);  /* #C6D1CB — viền rõ hơn        */
+
+  /* --- Chữ (tất cả đều >= 4.5:1 trên nền tương ứng) ---------------------- */
+  --hsk-text:             hsl(152, 16%, 13%);  /* #1C2622 — 15.6:1 trên trắng  */
+  --hsk-text-muted:       hsl(152, 10%, 40%);  /* #5C7067 —  5.3:1 trên trắng  */
+  --hsk-text-on-bubble:   hsl(152, 15%, 30%);  /* #41584D — chữ phụ TRONG bóng */
+  --hsk-text-inverse:     #ffffff;
+
+  /* --- Bong bóng tin nhắn ------------------------------------------------ */
+  --hsk-bubble-own-bg:        hsl(152, 46%, 83%); /* #C0E8D5 — của MÌNH        */
+  --hsk-bubble-own-border:    hsl(152, 34%, 66%); /* #8BC6AA                   */
+  --hsk-bubble-own-selected:  hsl(152, 44%, 74%);
+  --hsk-bubble-other-bg:      hsl(150, 12%, 95%); /* #F1F4F2 — của NGƯỜI KHÁC  */
+  --hsk-bubble-other-border:  hsl(150, 10%, 84%); /* #D2DAD6                   */
+  --hsk-bubble-bot-bg:        hsl(152, 54%, 94%); /* #E7F8F0 — của BOT         */
+  --hsk-bubble-bot-border:    var(--hsk-primary);
+
+  /* --- Nhấn & trạng thái ------------------------------------------------- */
+  --hsk-accent:           hsl(22, 92%, 37%);   /* #B54708 — tag @mention (5.4:1 với chữ trắng) */
+  --hsk-accent-soft:      hsl(28, 100%, 95%);
+  --hsk-link:             hsl(206, 88%, 36%);  /* #0B67AD — 5.9:1 trên trắng   */
+  --hsk-link-on-own:      hsl(206, 92%, 27%);  /* #064D84 — link trong bóng xanh */
+  --hsk-success:          hsl(142, 58%, 32%);  /* #228145 — badge chưa đọc     */
+  --hsk-online:           hsl(142, 62%, 38%);  /* chấm online                  */
+  --hsk-offline:          hsl(150, 8%, 52%);   /* chấm offline — 3.47:1, đạt WCAG 1.4.11 */
+  --hsk-danger:           hsl(0, 72%, 42%);    /* #B81E1E — badge đỏ           */
+  --hsk-warning:          hsl(35, 92%, 38%);
+
+  /* --- Chữ: cỡ & giãn dòng ---------------------------------------------- */
+  --hsk-fs-xs:            11px;   /* timestamp, nhãn rất nhỏ */
+  --hsk-fs-sm:            12.5px; /* chú thích, chức danh    */
+  --hsk-fs-base:          14px;   /* nội dung tin nhắn       */
+  --hsk-fs-md:            15px;   /* tên hội thoại           */
+  --hsk-fs-lg:            17px;   /* tiêu đề cột             */
+  --hsk-lh-tight:         1.3;
+  --hsk-lh-base:          1.55;   /* thoáng hơn 1.5715 cũ, dễ đọc tiếng Việt có dấu */
+
+  /* --- Khoảng cách (thang 4px) ------------------------------------------ */
+  --hsk-sp-1: 4px;
+  --hsk-sp-2: 8px;
+  --hsk-sp-3: 12px;
+  --hsk-sp-4: 16px;
+  --hsk-sp-5: 20px;
+
+  /* --- Bo góc ------------------------------------------------------------ */
+  --hsk-r-sm:    6px;
+  --hsk-r-md:    10px;
+  --hsk-r-lg:    14px;   /* bong bóng tin nhắn */
+  --hsk-r-pill:  999px;  /* ô nhập, chip, nút tròn */
+
+  /* --- Đổ bóng ----------------------------------------------------------- */
+  --hsk-shadow-xs: 0 1px 2px hsla(152, 20%, 10%, 0.06);
+  --hsk-shadow-sm: 0 1px 3px hsla(152, 20%, 10%, 0.08), 0 1px 2px hsla(152, 20%, 10%, 0.04);
+  --hsk-shadow-md: 0 4px 12px hsla(152, 20%, 10%, 0.10);
+  --hsk-shadow-lg: 0 10px 28px hsla(152, 20%, 10%, 0.16);
+
+  /* --- Chuyển động & focus ----------------------------------------------- */
+  --hsk-ease:      cubic-bezier(0.4, 0, 0.2, 1);
+  --hsk-dur:       0.16s;
+  --hsk-focus-ring: 0 0 0 3px hsla(152, 45%, 40%, 0.35);
+}
+
+/* Tôn trọng người dùng tắt hiệu ứng chuyển động */
+@media (prefers-reduced-motion: reduce) {
+  :root { --hsk-dur: 0.001s; }
+}
+
+/* ============================================================================
+   2. NỀN TẢNG: chữ, nền, thanh cuộn
+   ==========================================================================*/
+body {
+  color: var(--hsk-text) !important;
+  line-height: var(--hsk-lh-base) !important;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.chat-dashboard { color: var(--hsk-text) !important; }
+
+/* Viền phân cột: mảnh và cùng tông thay vì #ccc cứng */
+.chat-dashboard__history,
+.chat-dashboard__conversation,
+.info-zone {
+  border-color: var(--hsk-border) !important;
+  border-right-width: 1px !important;
+  border-bottom-width: 0 !important;
+}
+.info-zone { border-right-width: 0 !important; }
+
+/* --- Thanh cuộn tuỳ chỉnh ------------------------------------------------ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--hsk-border-strong) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+}
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--hsk-border-strong) !important;
+  border: 3px solid transparent !important;
+  border-radius: var(--hsk-r-pill) !important;
+  background-clip: content-box !important;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(152, 18%, 60%) !important;
+  background-clip: content-box !important;
+}
+::-webkit-scrollbar-corner { background: transparent !important; }
+
+/* Danh sách hội thoại + khung tin nhắn: chỉ hiện thanh cuộn khi rê chuột vào */
+.chat-dashboard__history__listwrap::-webkit-scrollbar-thumb,
+.chat-dashboard__conversation__content::-webkit-scrollbar-thumb {
+  background: transparent !important;
+  background-clip: content-box !important;
+  transition: background var(--hsk-dur) var(--hsk-ease);
+}
+.chat-dashboard__history__listwrap:hover::-webkit-scrollbar-thumb,
+.chat-dashboard__conversation__content:hover::-webkit-scrollbar-thumb {
+  background: var(--hsk-border-strong) !important;
+  background-clip: content-box !important;
+}
+
+/* --- Vòng focus thống nhất cho mọi phần tử tương tác --------------------- */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible,
+[role="button"]:focus-visible,
+[class*="chat-group_chat-item"]:focus-visible,
+.menu-taskbar__option__level1:focus-visible,
+.ant-tabs-tab-btn:focus-visible {
+  outline: 2px solid var(--hsk-primary-hover) !important;
+  outline-offset: 2px !important;
+  border-radius: var(--hsk-r-sm);
+}
+
+/* ============================================================================
+   3. THANH TÁC VỤ TRÁI (menu-taskbar)
+   ==========================================================================*/
+.menu-taskbar {
+  background: linear-gradient(180deg,
+              var(--hsk-primary) 0%,
+              var(--hsk-primary-deep) 100%) !important;
+  color: var(--hsk-text-inverse) !important;
+  box-shadow: inset -1px 0 0 hsla(0, 0%, 100%, 0.08) !important;
+}
+
+.menu-taskbar__option__level1,
+.menu-taskbar__option__profile,
+.menu-taskbar__setting {
+  position: relative;
+  transition: background-color var(--hsk-dur) var(--hsk-ease) !important;
+}
+
+.menu-taskbar__option__level1:hover,
+.menu-taskbar__option__profile:hover,
+.menu-taskbar__setting:hover {
+  background-color: hsla(0, 0%, 100%, 0.12) !important;
+}
+
+.menu-taskbar__option__level1:active { background-color: hsla(0, 0%, 100%, 0.20) !important; }
+
+/* Mục đang chọn: nền sáng hơn + vạch chỉ báo bên trái */
+.menu-taskbar__option__level1[style*="background"] { background-color: hsla(0, 0%, 100%, 0.16) !important; }
+.menu-taskbar__option__level1[style*="background"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 26px;
+  border-radius: 0 var(--hsk-r-sm) var(--hsk-r-sm) 0;
+  background: var(--hsk-text-inverse);
+}
+
+/* Nút thu gọn tròn nằm ở mép taskbar */
+.menu-taskbar__change-icon {
+  background: var(--hsk-white) !important;
+  border: 1px solid var(--hsk-border) !important;
+  color: var(--hsk-primary-strong) !important;
+  box-shadow: var(--hsk-shadow-sm) !important;
+  transition: transform var(--hsk-dur) var(--hsk-ease),
+              box-shadow var(--hsk-dur) var(--hsk-ease) !important;
+}
+.menu-taskbar__change-icon:hover {
+  transform: scale(1.08);
+  box-shadow: var(--hsk-shadow-md) !important;
+}
+.menu-taskbar__change-icon:active { transform: scale(0.96); }
+
+/* Popup cài đặt */
+.menu-taskbar__setting__popup {
+  border: 1px solid var(--hsk-border) !important;
+  border-radius: var(--hsk-r-md) !important;
+  box-shadow: var(--hsk-shadow-lg) !important;
+  color: var(--hsk-text) !important;
+  overflow: hidden;
+}
+.menu-taskbar__setting__popup > * { border-bottom-color: var(--hsk-border) !important; }
+.menu-taskbar__setting__popup > :hover { background-color: var(--hsk-primary-tint) !important; }
+
+/* ============================================================================
+   4. CỘT TRÁI — DANH SÁCH HỘI THOẠI
+   ==========================================================================*/
+
+/* --- Hàng tiêu đề ("Cuộc trò chuyện" / nút Tải App) ---------------------- */
+.chat-dashboard__history__title {
+  height: 52px !important;
+  padding: 0 var(--hsk-sp-4) !important;
+  border-bottom: 1px solid var(--hsk-border) !important;
+  background: var(--hsk-white) !important;
+  gap: var(--hsk-sp-2);
+}
+/* App đặt cỡ chữ theo vw (1.25vw) — quá nhỏ ở laptop, quá to ở màn 4K */
+.chat-dashboard__history__title > :first-child {
+  font-size: var(--hsk-fs-lg) !important;
+  font-weight: 700 !important;
+  color: var(--hsk-text) !important;
+  letter-spacing: -0.01em;
+}
+
+.chat-dashboard__history__top__left__download {
+  border: 1px solid var(--hsk-border-strong) !important;
+  border-radius: var(--hsk-r-pill) !important;
+  color: var(--hsk-primary-strong) !important;
+  font-size: var(--hsk-fs-sm) !important;
+  font-weight: 600 !important;
+  padding: var(--hsk-sp-1) 10px var(--hsk-sp-1) var(--hsk-sp-2) !important;
+  gap: var(--hsk-sp-1);
+  white-space: nowrap;
+  transition: background-color var(--hsk-dur) var(--hsk-ease),
+              border-color var(--hsk-dur) var(--hsk-ease) !important;
+}
+.chat-dashboard__history__top__left__download:hover {
+  background: var(--hsk-primary-tint) !important;
+  border-color: var(--hsk-primary) !important;
+}
+.chat-dashboard__history__top__left__download:active { background: var(--hsk-primary-soft) !important; }
+
+/* --- Ô tìm kiếm ---------------------------------------------------------- */
+.chat-dashboard__history__head {
+  height: auto !important;
+  margin: var(--hsk-sp-2) var(--hsk-sp-3) var(--hsk-sp-1) var(--hsk-sp-3) !important;
+  gap: var(--hsk-sp-2);
+}
+.chat-dashboard__history__search { height: 36px !important; }
+.chat-dashboard__history__search input {
+  background: var(--hsk-surface-2) !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--hsk-r-pill) !important;
+  color: var(--hsk-text) !important;
+  font-size: var(--hsk-fs-base) !important;
+  padding: 0 var(--hsk-sp-4) 0 42px !important;
+  transition: background-color var(--hsk-dur) var(--hsk-ease),
+              border-color var(--hsk-dur) var(--hsk-ease),
+              box-shadow var(--hsk-dur) var(--hsk-ease) !important;
+}
+.chat-dashboard__history__search input::placeholder { color: var(--hsk-text-muted) !important; }
+.chat-dashboard__history__search input:hover { background: var(--hsk-surface) !important; }
+.chat-dashboard__history__search input:focus {
+  background: var(--hsk-white) !important;
+  border-color: var(--hsk-primary) !important;
+  box-shadow: var(--hsk-focus-ring) !important;
+  outline: none !important;
+}
+
+/* Icon lọc / tìm người / chuông */
+.filterarea_wrapper__A8nUn,
+[class*="filterarea_wrapper"],
+.chat-dashboard__history__head__notify,
+.chat-dashboard__history__head svg[data-testid="PersonSearchIcon"] {
+  border-radius: var(--hsk-r-sm);
+  transition: background-color var(--hsk-dur) var(--hsk-ease) !important;
+}
+[class*="filterarea_wrapper"]:hover,
+.chat-dashboard__history__head__notify:hover,
+.chat-dashboard__history__head svg[data-testid="PersonSearchIcon"]:hover {
+  background-color: var(--hsk-primary-ghost) !important;
+  cursor: pointer;
+}
+[class*="filterarea_choose-filter"] { background-color: var(--hsk-primary-soft) !important; }
+[class*="filterarea_btn-done"] {
+  background-color: var(--hsk-primary) !important;
+  color: var(--hsk-text-inverse) !important;
+  border-radius: var(--hsk-r-sm) !important;
+}
+[class*="filterarea_btn-done"]:hover { background-color: var(--hsk-primary-hover) !important; }
+[class*="filterarea_btn-cancel"] {
+  border: 1px solid var(--hsk-border-strong) !important;
+  color: var(--hsk-text-muted) !important;
+  border-radius: var(--hsk-r-sm) !important;
+}
+[class*="filterarea_red-dots"] { background-color: var(--hsk-danger) !important; }
+
+/* --- Tab "Tất cả / Chờ xử lý / Đánh dấu" --------------------------------- */
+#chatHistorySeenStatus .ant-tabs-tab-btn {
+  color: var(--hsk-text-muted) !important;
+  font-size: var(--hsk-fs-base) !important;
+  font-weight: 500 !important;
+  transition: color var(--hsk-dur) var(--hsk-ease) !important;
+}
+#chatHistorySeenStatus .ant-tabs-tab:hover .ant-tabs-tab-btn { color: var(--hsk-primary-strong) !important; }
+#chatHistorySeenStatus .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--hsk-primary-strong) !important;
+  font-weight: 700 !important;
+}
+/* App đặt `background-color: green !important` với selector y hệt. Thêm `html` ở đầu
+   để tăng độ ưu tiên, vì CSS của extension được chèn TRƯỚC nên hoà nhau thì app thắng. */
+html #chatHistorySeenStatus .ant-tabs-ink-bar {
+  background-color: var(--hsk-primary) !important;
+  height: 3px !important;
+  border-radius: var(--hsk-r-pill) var(--hsk-r-pill) 0 0 !important;
+}
+#chatHistorySeenStatus .ant-tabs-nav { border-bottom: 1px solid var(--hsk-border) !important; }
+
+/* Badge số trên tab + badge chuông */
+.MuiBadge-badge {
+  background-color: var(--hsk-danger) !important;
+  color: var(--hsk-text-inverse) !important;
+  font-size: var(--hsk-fs-xs) !important;
+  font-weight: 700 !important;
+  border-radius: var(--hsk-r-pill) !important;
+  box-shadow: 0 0 0 2px var(--hsk-white);
+}
+.MuiBadge-badge.MuiBadge-invisible { box-shadow: none !important; }
+
+/* --- Nhãn nhóm ("Đã ghim", "Cuộc trò chuyện") ---------------------------- */
+[class*="chat-group_group-name"] {
+  color: var(--hsk-text-muted) !important;    /* #7A7A7A (4.29:1) -> 5.3:1 */
+  font-size: var(--hsk-fs-sm) !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: var(--hsk-sp-3) 0 var(--hsk-sp-1) var(--hsk-sp-3) !important;
+}
+
+/* --- Một dòng hội thoại -------------------------------------------------- */
+[class*="popup-menu-wrapper_wrapper"] {
+  border-radius: var(--hsk-r-md) !important;
+  margin: 1px var(--hsk-sp-2) !important;
+  padding: 0 !important;
+  width: auto !important;
+  transition: background-color var(--hsk-dur) var(--hsk-ease) !important;
+}
+[class*="popup-menu-wrapper_wrapper"]:hover { background-color: var(--hsk-surface-2) !important; }
+
+/* Hội thoại đang mở: nền xanh nhạt + vạch chỉ báo bên trái */
+[class*="popup-menu-wrapper_wrapper--active"],
+[class*="popup-menu-wrapper_wrapper--active"]:hover {
+  background-color: var(--hsk-primary-soft) !important;
+  position: relative;
+}
+[class*="popup-menu-wrapper_wrapper--active"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: var(--hsk-r-pill);
+  background: var(--hsk-primary);
+}
+
+[class*="chat-group_chat-item"] {
+  padding: var(--hsk-sp-2) 10px !important;
+  column-gap: 10px !important;
+  border-radius: var(--hsk-r-md) !important;
+  cursor: pointer;
+}
+
+[class*="chat-group_member-name"] {
+  color: var(--hsk-text) !important;
+  font-size: var(--hsk-fs-md) !important;
+  font-weight: 500 !important;
+  line-height: var(--hsk-lh-tight) !important;
+}
+[class*="chat-group_member-name--unseen"] { font-weight: 700 !important; }
+
+[class*="chat-group_member-message"] {
+  color: var(--hsk-text-muted) !important;    /* #777 (4.48:1) -> 5.3:1 */
+  font-size: 13px !important;
+  line-height: var(--hsk-lh-tight) !important;
+}
+/* App dùng `green` (#008000) cho dòng chưa đọc — đổi sang xanh thương hiệu.
+   App khai báo `color: green !important` ở cùng mức ưu tiên, nên thêm `html` để thắng. */
+html [class*="chat-group_member-message--unseen"],
+html [class*="chat-group_unseen"],
+html .chat-dashboard__member__message--unseen {
+  color: var(--hsk-primary-strong) !important;
+  font-weight: 700 !important;
+}
+
+[class*="chat-group_member-time"] {
+  color: var(--hsk-text-muted) !important;
+  font-size: var(--hsk-fs-xs) !important;
+  font-weight: 500 !important;
+}
+
+/* Badge số tin chưa đọc */
+[class*="chat-group_member-action__num"] {
+  background-color: var(--hsk-success) !important;
+  color: var(--hsk-text-inverse) !important;
+  font-size: var(--hsk-fs-xs) !important;
+  font-weight: 700 !important;
+  min-width: 19px !important;
+  height: 19px !important;
+  box-shadow: var(--hsk-shadow-xs) !important;
+}
+
+/* Chấm trạng thái online / offline trên avatar */
+.chat-dashboard__member__img__status {
+  border: 2px solid var(--hsk-white) !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+.chat-dashboard__member__status--online  { background-color: var(--hsk-online) !important; }
+.chat-dashboard__member__status--offline { background-color: var(--hsk-offline) !important; }
+
+/* Avatar ghép nhóm */
+[class*="hsk-avatar__alphabet"] {
+  background-color: var(--hsk-primary-soft) !important;
+  color: var(--hsk-primary-strong) !important;
+  font-weight: 600 !important;
+}
+
+/* ============================================================================
+   5. CỘT GIỮA — KHUNG HỘI THOẠI
+   ==========================================================================*/
+
+/* --- Header hội thoại ---------------------------------------------------- */
+.chat-dashboard__conversation__head {
+  background: var(--hsk-primary-soft) !important;
+  border-bottom: 1px solid hsl(152, 30%, 84%) !important;
+  /* `flex: 0 0 auto` để header không bị thanh ghim bên dưới (flex: 1 0 auto) ép co lại */
+  flex: 0 0 56px !important;
+  height: 56px !important;
+  max-height: 56px !important;
+  padding: 0 var(--hsk-sp-3) !important;
+}
+.chat-dashboard__conversation__head__name > span:first-child {
+  font-size: var(--hsk-fs-lg) !important;
+  font-weight: 700 !important;
+  color: var(--hsk-text) !important;
+  letter-spacing: -0.01em;
+}
+.chat-dashboard__conversation__head__member,
+.chat-dashboard__conversation__head__name__status {
+  color: var(--hsk-text-muted) !important;     /* #999 (2.85:1) -> 4.5:1 */
+  font-size: var(--hsk-fs-sm) !important;
+}
+.chat-dashboard__conversation__head__avatar__status {
+  border-color: var(--hsk-primary-soft) !important;
+  background-color: var(--hsk-offline) !important;
+}
+.chat-dashboard__conversation__head__avatar__status.active { background-color: var(--hsk-online) !important; }
+
+/* Nhóm icon bên phải header: vùng bấm tròn, hover nhẹ */
+.chat-dashboard__conversation__head__menu > span {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--hsk-r-pill) !important;
+  margin: 0 2px !important;
+  justify-content: center;
+  transition: background-color var(--hsk-dur) var(--hsk-ease) !important;
+}
+.chat-dashboard__conversation__head__menu > span:hover { background-color: hsla(152, 40%, 25%, 0.10) !important; }
+.chat-dashboard__conversation__head__menu > span:active { background-color: hsla(152, 40%, 25%, 0.18) !important; }
+.chat-dashboard__conversation__head__menu svg { color: var(--hsk-primary-strong) !important; }
+
+/* --- Thanh tin nhắn đã ghim ---------------------------------------------- */
+.chat-dashboard__conversation__pinmsg {
+  background: var(--hsk-surface) !important;
+  border-bottom: 1px solid var(--hsk-border) !important;
+  height: 42px !important;
+  font-size: 13px !important;
+}
+.chat-dashboard__conversation__pinmsg__icon svg { color: var(--hsk-primary) !important; }
+.chat-dashboard__conversation__pinmsg__content__user { color: var(--hsk-text) !important; }
+.chat-dashboard__conversation__pinmsg__content__msg { color: var(--hsk-text-muted) !important; }
+.RevealPinMsgModal .pinmsg-open {
+  border: 1px solid var(--hsk-border-strong) !important;
+  border-radius: var(--hsk-r-pill) !important;
+  color: var(--hsk-text-muted) !important;
+  transition: background-color var(--hsk-dur) var(--hsk-ease),
+              border-color var(--hsk-dur) var(--hsk-ease) !important;
+}
+.RevealPinMsgModal .pinmsg-open:hover {
+  background: var(--hsk-primary-tint) !important;
+  border-color: var(--hsk-primary) !important;
+  color: var(--hsk-primary-strong) !important;
+}
+.RevealPinMsgModal .pinmsg-borderRight { border-right-color: var(--hsk-border) !important; }
+
+/* --- Vùng tin nhắn ------------------------------------------------------- */
+.chat-dashboard__conversation__content,
+.chat-dashboard__conversation__content--chatbot {
+  background-color: var(--hsk-white) !important;
+  padding-left: var(--hsk-sp-4) !important;
+  padding-right: var(--hsk-sp-2) !important;
+}
+
+/* Dải ngăn cách ngày giờ */
+.chat-dashboard__conversation__content__time > span:first-child {
+  color: var(--hsk-text-muted) !important;     /* #999 -> đạt AA */
+  font-size: var(--hsk-fs-sm) !important;
+  font-weight: 500 !important;
+}
+.chat-dashboard__conversation__content__unseen-line {
+  color: var(--hsk-danger) !important;
+  font-size: var(--hsk-fs-sm) !important;
+  font-weight: 600 !important;
+}
+.chat-dashboard__conversation__content__unseen-line :nth-child(3),
+.chat-dashboard__conversation__content__unseen-line > :first-child {
+  border-bottom-color: hsla(0, 72%, 42%, 0.35) !important;
+}
+
+/* Tên + chức danh người gửi */
+.chat-dashboard__conversation__content__group__displayname {
+  color: var(--hsk-primary-strong) !important;  /* `gray` -> xanh thương hiệu */
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+.chat-dashboard__conversation__content__group-header .pb-1 {
+  color: var(--hsk-text-muted) !important;
+  font-size: var(--hsk-fs-sm) !important;
+  line-height: var(--hsk-lh-tight) !important;
+}
+
+/* Ô trống kỹ thuật giữa các tin: app tô trắng cứng, bỏ đi cho nền liền mạch */
+.chat-dashboard__conversation__content__row__space {
+  background-color: transparent !important;
+  height: 14px !important;
+}
+
+/* ---------------------------------------------------------------------------
+   BONG BÓNG TIN NHẮN — điểm nhấn chính
+   Phân biệt bằng 3 tín hiệu chồng nhau, để cả người mù màu vẫn nhận ra:
+     (1) Màu   : xanh bạc hà (mình) vs trung tính (người khác)
+     (2) Hình  : góc dưới phía mình bo nhỏ lại (đuôi bong bóng)
+     (3) Vị trí: phải (mình) vs trái (người khác) — app đã có sẵn
+   Tương phản chữ/nền: 11.7:1 (mình) và 14.1:1 (người khác) — vượt WCAG AA.
+   --------------------------------------------------------------------------*/
+.chat-dashboard__conversation__content__row__user,
+.chat-dashboard__conversation__content__row__target,
+.chat-dashboard__conversation__content__row__mixture,
+.chat-dashboard__conversation__content__row__file.user,
+.chat-dashboard__conversation__content__row__file.target {
+  font-size: var(--hsk-fs-base) !important;
+  line-height: var(--hsk-lh-base) !important;
+  padding: var(--hsk-sp-2) var(--hsk-sp-3) !important;
+  margin: 2px 0 !important;
+  box-shadow: var(--hsk-shadow-xs) !important;
+  transition: box-shadow var(--hsk-dur) var(--hsk-ease) !important;
+}
+
+/* --- Tin của MÌNH --------------------------------------------------------- */
+.chat-dashboard__conversation__content__row__user,
+.chat-dashboard__conversation__content__row__mixture.user,
+.chat-dashboard__conversation__content__row__file.user,
+.chat-dashboard__conversation__content__row__skeleton__img,
+.chat-dashboard__conversation__content__quote__mess.imgSkeleton,
+.chat-dashboard__conversation__content__row__both.skeleton {
+  background-color: var(--hsk-bubble-own-bg) !important;
+  border: 1px solid var(--hsk-bubble-own-border) !important;
+  color: var(--hsk-text) !important;
+  border-radius: var(--hsk-r-lg) var(--hsk-r-lg) var(--hsk-r-sm) var(--hsk-r-lg) !important;
+}
+
+/* --- Tin của NGƯỜI KHÁC --------------------------------------------------- */
+.chat-dashboard__conversation__content__row__target,
+.chat-dashboard__conversation__content__row__mixture.target,
+.chat-dashboard__conversation__content__row__file.target {
+  background-color: var(--hsk-bubble-other-bg) !important;
+  border: 1px solid var(--hsk-bubble-other-border) !important;
+  color: var(--hsk-text) !important;
+  border-radius: var(--hsk-r-lg) var(--hsk-r-lg) var(--hsk-r-lg) var(--hsk-r-sm) !important;
+}
+
+/* --- Tin của BOT ---------------------------------------------------------- */
+.chat-dashboard__conversation__content__row__target.bot,
+.chat-dashboard__conversation__content__row__mixture.bot {
+  background-color: var(--hsk-bubble-bot-bg) !important;
+  border: 1px dashed var(--hsk-bubble-bot-border) !important;
+  color: var(--hsk-text) !important;
+}
+
+/* Tin đang được chọn / được trích dẫn */
+.chat-dashboard__conversation__content__row__user[data-selected="true"],
+.chat-dashboard__conversation__content__row__mixture.user[data-selected="true"] {
+  background-color: var(--hsk-bubble-own-selected) !important;
+}
+.chat-dashboard__conversation__content__msg--target:hover .chat-dashboard__conversation__content__row__user,
+.chat-dashboard__conversation__content__msg--target:hover .chat-dashboard__conversation__content__row__target {
+  box-shadow: var(--hsk-shadow-sm) !important;
+}
+
+/* Tin đã thu hồi */
+.chat-dashboard__conversation__content__row__deleted {
+  border: 1px dashed var(--hsk-border-strong) !important;
+  border-radius: var(--hsk-r-lg) !important;
+  color: var(--hsk-text-muted) !important;
+  background: var(--hsk-surface) !important;
+}
+
+/* Giờ gửi trong bong bóng: app dùng `gray` 10px (3.95:1 — trượt AA) */
+.chat-dashboard__conversation__lasttime {
+  color: var(--hsk-text-on-bubble) !important;
+  font-size: var(--hsk-fs-xs) !important;
+  opacity: 0.85;
+}
+
+/* Link trong tin nhắn */
+.chat-dashboard__conversation__content__link,
+.chat-dashboard__conversation__content__row a,
+.chat-dashboard__conversation__content__row__mixture a {
+  color: var(--hsk-link) !important;           /* #1890FF (3.2:1) -> 5.9:1 */
+  text-decoration-color: hsla(206, 88%, 36%, 0.4);
+  text-underline-offset: 2px;
+}
+.chat-dashboard__conversation__content__row__user a,
+.chat-dashboard__conversation__content__row__mixture.user a {
+  color: var(--hsk-link-on-own) !important;    /* đậm hơn để nổi trên nền xanh */
+}
+.chat-dashboard__conversation__content__row a:hover { text-decoration: underline !important; }
+
+/* Thẻ @mention và nhãn "Tất cả tương tác" */
+.chat-dashboard__conversation__content__row__mention-tag {
+  background-color: var(--hsk-accent) !important;  /* #FD6600 (2.97:1) -> 5.4:1 */
+  color: var(--hsk-text-inverse) !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  border-radius: var(--hsk-r-pill) !important;
+  padding: 2px var(--hsk-sp-2) !important;
+  letter-spacing: 0.01em;
+}
+.chat-dashboard__conversation__content__mention {
+  color: var(--hsk-primary-strong) !important;
+  font-weight: 700 !important;
+}
+#chatConversationBoxInput .mention {
+  background-color: var(--hsk-primary-soft) !important;
+  color: var(--hsk-primary-deep) !important;
+  border-radius: var(--hsk-r-sm) !important;
+  padding: 0 3px;
+}
+
+/* Khối trích dẫn (reply) */
+.chat-dashboard__conversation__content__quote-block {
+  background-color: hsla(152, 30%, 40%, 0.10) !important;
+  border-left: 3px solid var(--hsk-primary) !important;
+  border-radius: var(--hsk-r-sm) !important;
+  padding: var(--hsk-sp-1) var(--hsk-sp-2) !important;
+}
+.chat-dashboard__conversation__content__quote__sub {
+  color: var(--hsk-text-muted) !important;
+  font-size: var(--hsk-fs-sm) !important;
+}
+
+/* Thẻ xem trước link */
+.chat-dashboard__conversation__previewlink__body {
+  background-color: hsla(0, 0%, 100%, 0.65) !important;
+  border: 1px solid var(--hsk-border) !important;
+  border-radius: var(--hsk-r-md) !important;
+  transition: border-color var(--hsk-dur) var(--hsk-ease),
+              background-color var(--hsk-dur) var(--hsk-ease) !important;
+}
+.chat-dashboard__conversation__previewlink:hover .chat-dashboard__conversation__previewlink__body {
+  border-color: var(--hsk-primary) !important;
+  background-color: var(--hsk-white) !important;
+}
+.chat-dashboard__conversation__previewlink__title   { color: var(--hsk-text) !important; font-size: var(--hsk-fs-md) !important; }
+.chat-dashboard__conversation__previewlink__content { color: var(--hsk-text-muted) !important; font-size: var(--hsk-fs-sm) !important; }
+.chat-dashboard__conversation__previewlink__link    { color: var(--hsk-text-muted) !important; font-size: var(--hsk-fs-xs) !important; }
+
+/* Thông tin tệp đính kèm */
+.chat-dashboard__conversation__content__row__file__icon,
+.chat-dashboard__conversation__content__row__file__icon svg,
+.chat-dashboard__conversation__content__row__file__name,
+.chat-dashboard__conversation__content__row__file__name span,
+.chat-dashboard__conversation__content__row__file__sname,
+.chat-dashboard__conversation__content__row__file__sname span { color: var(--hsk-text) !important; }
+.chat-dashboard__conversation__content__row__file__size { color: var(--hsk-text-on-bubble) !important; font-size: var(--hsk-fs-xs) !important; }
+
+/* Chip cảm xúc dưới bong bóng */
+.chat-dashboard__conversation__content__row__emotion-task__emotion,
+.chat-dashboard__conversation__content__row__emotion-task__task {
+  background-color: var(--hsk-white) !important;
+  border: 1px solid var(--hsk-border) !important;
+  border-radius: var(--hsk-r-pill) !important;
+  box-shadow: var(--hsk-shadow-xs) !important;
+  transition: transform var(--hsk-dur) var(--hsk-ease),
+              border-color var(--hsk-dur) var(--hsk-ease) !important;
+}
+.chat-dashboard__conversation__content__row__emotion-task__emotion:hover,
+.chat-dashboard__conversation__content__row__emotion-task__task:hover {
+  transform: translateY(-1px);
+  border-color: var(--hsk-primary) !important;
+}
+/* App đặt `color: #777 !important` cho span bên trong — thêm `html` để thắng thế hoà */
+html .chat-dashboard__conversation__content__row__emotion-task__emotion__count,
+html .chat-dashboard__conversation__content__row__emotion-task__emotion__count span {
+  color: var(--hsk-text-muted) !important;
+  font-size: var(--hsk-fs-sm) !important;
+  font-weight: 600 !important;
+}
+.chat-dashboard__conversation__content__row__pinicon { box-shadow: var(--hsk-shadow-sm) !important; }
+
+/* Bảng chọn cảm xúc + menu chuột phải trên tin nhắn */
+.chat-dashboard__conversation__content__row__option__emotion,
+.chat-dashboard__conversation__content__row__option__popup {
+  border: 1px solid var(--hsk-border) !important;
+  border-radius: var(--hsk-r-md) !important;
+  box-shadow: var(--hsk-shadow-lg) !important;
+  color: var(--hsk-text) !important;
+}
+.chat-dashboard__conversation__content__row__option__emotion__select { background-color: var(--hsk-primary-soft) !important; }
+.chat-dashboard__conversation__content__row__option__menu { border-bottom-color: var(--hsk-border) !important; }
+.chat-dashboard__conversation__content__row__option__menu:hover { background-color: var(--hsk-primary-tint) !important; }
+
+/* Icon sửa/trả lời hiện khi rê chuột lên tin nhắn */
+.chat-dashboard__conversation__content__row__option svg {
+  color: var(--hsk-text-muted) !important;
+  transition: color var(--hsk-dur) var(--hsk-ease),
+              transform var(--hsk-dur) var(--hsk-ease) !important;
+}
+.chat-dashboard__conversation__content__row__option:hover svg {
+  color: var(--hsk-primary-strong) !important;
+  transform: scale(1.12);
+}
+
+/* --- "Đang nhập…" -------------------------------------------------------- */
+.chat-dashboard__conversation__content__typings {
+  color: var(--hsk-text-muted) !important;
+  font-size: var(--hsk-fs-sm) !important;
+  font-style: italic;
+  padding-left: 42px;
+  min-height: 25px;
+}
+/* Ba chấm nhấp nháy đặt trước dòng "đang nhập", chỉ hiện khi có nội dung */
+.chat-dashboard__conversation__content__typings > div:not(:empty)::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: var(--hsk-sp-2);
+  border-radius: 50%;
+  background: var(--hsk-primary);
+  animation: hsk-typing-pulse 1.2s var(--hsk-ease) infinite;
+  vertical-align: middle;
+}
+@keyframes hsk-typing-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.75); }
+  50%      { opacity: 1;    transform: scale(1); }
+}
+
+/* --- Nút cuộn xuống cuối ------------------------------------------------- */
+.chat-dashboard__conversation__box__rollDown {
+  background-color: var(--hsk-white) !important;
+  border: 1px solid var(--hsk-border-strong) !important;
+  color: var(--hsk-primary-strong) !important;
+  box-shadow: var(--hsk-shadow-md) !important;
+  transition: transform var(--hsk-dur) var(--hsk-ease),
+              background-color var(--hsk-dur) var(--hsk-ease) !important;
+}
+.chat-dashboard__conversation__box__rollDown:hover {
+  background-color: var(--hsk-primary-tint) !important;
+  transform: translateY(-2px);
+}
+.chat-dashboard__conversation__box__rollDown__count { background-color: var(--hsk-danger) !important; }
+
+/* ============================================================================
+   6. KHUNG SOẠN TIN
+   ==========================================================================*/
+.chat-dashboard__conversation__box {
+  padding: var(--hsk-sp-2) var(--hsk-sp-3) var(--hsk-sp-3) !important;
+  border-top: 1px solid var(--hsk-border) !important;
+  background: var(--hsk-white) !important;
+  gap: var(--hsk-sp-1);
+}
+
+.chat-dashboard__conversation__wrapbox {
+  background-color: var(--hsk-surface-2) !important;
+  border: 1px solid var(--hsk-border) !important;
+  border-radius: 20px !important;
+  transition: border-color var(--hsk-dur) var(--hsk-ease),
+              background-color var(--hsk-dur) var(--hsk-ease),
+              box-shadow var(--hsk-dur) var(--hsk-ease) !important;
+}
+.chat-dashboard__conversation__wrapbox:hover { background-color: var(--hsk-surface) !important; }
+/* Viền sáng lên khi con trỏ đang ở trong ô soạn tin */
+.chat-dashboard__conversation__wrapbox:focus-within {
+  background-color: var(--hsk-white) !important;
+  border-color: var(--hsk-primary) !important;
+  box-shadow: var(--hsk-focus-ring) !important;
+}
+
+.chat-dashboard__conversation__box__text {
+  background-color: transparent !important;
+  border-radius: 20px !important;
+  padding: var(--hsk-sp-1) 40px var(--hsk-sp-1) var(--hsk-sp-4) !important;
+}
+#chatConversationBoxInput .ql-editor {
+  font-size: var(--hsk-fs-base) !important;
+  line-height: var(--hsk-lh-base) !important;
+  color: var(--hsk-text) !important;
+}
+#chatConversationBoxInput .ql-editor.ql-blank::before { color: var(--hsk-text-muted) !important; }
+
+/* Nút đính kèm + nút emoji */
+.chat-dashboard__conversation__box__file,
+.chat-dashboard__conversation__box__text__emoji {
+  border-radius: var(--hsk-r-pill) !important;
+  transition: background-color var(--hsk-dur) var(--hsk-ease),
+              transform var(--hsk-dur) var(--hsk-ease) !important;
+}
+.chat-dashboard__conversation__box__file:hover,
+.chat-dashboard__conversation__box__text__emoji:hover { background-color: var(--hsk-primary-ghost) !important; }
+.chat-dashboard__conversation__box__text__emoji:hover svg { color: var(--hsk-primary-strong) !important; }
+
+/* --- Nút GỬI: từ icon xám thành nút tròn xanh thương hiệu ---------------- */
+.chat-dashboard__conversation__box__file.p-0,
+.chat-dashboard__conversation__box__file:has(svg[data-testid="SendRoundedIcon"]) {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: var(--hsk-r-pill) !important;
+  background-color: var(--hsk-primary) !important;
+  margin-left: var(--hsk-sp-2) !important;
+  flex: 0 0 auto;
+  transition: background-color var(--hsk-dur) var(--hsk-ease),
+              transform var(--hsk-dur) var(--hsk-ease),
+              box-shadow var(--hsk-dur) var(--hsk-ease) !important;
+}
+.chat-dashboard__conversation__box__file.p-0:hover,
+.chat-dashboard__conversation__box__file:has(svg[data-testid="SendRoundedIcon"]):hover {
+  background-color: var(--hsk-primary-hover) !important;
+  box-shadow: var(--hsk-shadow-md) !important;
+  transform: translateY(-1px);
+}
+.chat-dashboard__conversation__box__file.p-0:active,
+.chat-dashboard__conversation__box__file:has(svg[data-testid="SendRoundedIcon"]):active {
+  background-color: var(--hsk-primary-deep) !important;
+  transform: scale(0.94);
+}
+svg[data-testid="SendRoundedIcon"] {
+  color: var(--hsk-text-inverse) !important;
+  width: 22px !important;
+  height: 22px !important;
+}
+
+/* Khu vực xem trước tệp sắp gửi */
+.chat-dashboard__conversation__box__fileUpload {
+  background-color: var(--hsk-surface) !important;
+  border-top: 1px solid var(--hsk-border) !important;
+}
+.chat-dashboard__conversation__box__fileUpload__file { background-color: var(--hsk-surface-2) !important; border-radius: var(--hsk-r-md) !important; }
+.chat-dashboard__conversation__wrapbox__notice {
+  background: var(--hsk-primary-soft) !important;
+  border-radius: var(--hsk-r-md) !important;
+  box-shadow: var(--hsk-shadow-sm) !important;
+  color: var(--hsk-text) !important;
+}
+
+/* ============================================================================
+   7. CỘT PHẢI — THÔNG TIN NHÓM
+   ==========================================================================*/
+.info-zone .chat-dashboard__history__top,
+.chat-dashboard__history__top {
+  background: var(--hsk-primary) !important;
+  height: 52px !important;
+  padding: 0 var(--hsk-sp-4) !important;
+}
+.info-zone__title-top {
+  color: var(--hsk-text-inverse) !important;
+  font-size: var(--hsk-fs-lg) !important;
+  font-weight: 600 !important;
+}
+.info-zone .chat-dashboard__history__top svg { color: var(--hsk-text-inverse) !important; }
+
+.info-zone__empty__row {
+  background-color: var(--hsk-surface) !important;
+  height: 10px !important;
+  border-top: 1px solid var(--hsk-border) !important;
+  border-bottom: 1px solid var(--hsk-border) !important;
+}
+[class*="styles_intro-group"] { padding: var(--hsk-sp-4) var(--hsk-sp-5) !important; }
+[class*="styles_intro-group"] h2,
+.info-zone__description h3,
+.info-zone__group__amount h3,
+.info-zone__contact__section-title {
+  color: var(--hsk-text) !important;
+  font-size: var(--hsk-fs-md) !important;
+  font-weight: 700 !important;
+}
+.info-zone__description__view__link,
+.info-zone__description__preview__toggle,
+.info-zone__description__view__translate-toggle { color: var(--hsk-link) !important; }
+.info-zone__description__preview__content {
+  background-color: var(--hsk-surface) !important;
+  border: 1px solid var(--hsk-border) !important;
+  border-radius: var(--hsk-r-md) !important;
+  color: var(--hsk-text) !important;
+}
+.info-zone__description__add-btn {
+  background: var(--hsk-surface-2) !important;
+  color: var(--hsk-primary-strong) !important;
+  border-radius: var(--hsk-r-md) !important;
+  font-weight: 600 !important;
+}
+.info-zone__description__add-btn:hover { background: var(--hsk-primary-soft) !important; }
+.info-zone__group__add {
+  background-color: var(--hsk-primary) !important;
+  transition: background-color var(--hsk-dur) var(--hsk-ease), transform var(--hsk-dur) var(--hsk-ease) !important;
+}
+.info-zone__group__add:hover { background-color: var(--hsk-primary-hover) !important; transform: scale(1.06); }
+
+/* Tab Thành viên / Ảnh / Tệp / Liên kết */
+#info-zone-share-media .ant-tabs-nav .ant-tabs-tab { color: var(--hsk-text-muted) !important; font-size: var(--hsk-fs-base) !important; }
+#info-zone-share-media .ant-tabs-tab:hover { color: var(--hsk-primary-strong) !important; }
+#info-zone-share-media .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn { color: var(--hsk-primary-strong) !important; font-weight: 700 !important; }
+#info-zone-share-media .ant-tabs-ink-bar {
+  background-color: var(--hsk-primary) !important;
+  height: 3px !important;
+  border-radius: var(--hsk-r-pill) var(--hsk-r-pill) 0 0 !important;
+}
+#info-zone-share-media .ant-tabs-nav { border-bottom: 1px solid var(--hsk-border) !important; }
+
+/* Dòng thành viên */
+.info-zone__group__member__info {
+  border-radius: var(--hsk-r-md) !important;
+  padding: var(--hsk-sp-1) var(--hsk-sp-2) !important;
+  transition: background-color var(--hsk-dur) var(--hsk-ease) !important;
+}
+.info-zone__group__member__info.contact:hover { background-color: var(--hsk-surface-2) !important; }
+.info-zone__group__member__info__name { color: var(--hsk-text) !important; font-size: var(--hsk-fs-base) !important; font-weight: 600 !important; }
+.info-zone__group__member__info__major { color: var(--hsk-text-muted) !important; font-size: var(--hsk-fs-sm) !important; }
+.info-zone__group__member__info__admin {
+  color: var(--hsk-primary-strong) !important;
+  font-size: var(--hsk-fs-xs) !important;
+  font-weight: 700 !important;
+}
+.info-zone__group__search .ant-input {
+  background: var(--hsk-surface-2) !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--hsk-r-pill) !important;
+  color: var(--hsk-text) !important;
+  transition: background-color var(--hsk-dur) var(--hsk-ease),
+              border-color var(--hsk-dur) var(--hsk-ease),
+              box-shadow var(--hsk-dur) var(--hsk-ease) !important;
+}
+.info-zone__group__search .ant-input:focus {
+  background: var(--hsk-white) !important;
+  border-color: var(--hsk-primary) !important;
+  box-shadow: var(--hsk-focus-ring) !important;
+}
+.info-zone__contact__title  { color: var(--hsk-text-muted) !important; }
+.info-zone__contact__detail,
+.info-zone__contact__phone-value { color: var(--hsk-text) !important; }
+.info-zone__contact__phone-action { color: var(--hsk-primary-strong) !important; font-weight: 600 !important; }
+.info-zone__contact__section { border-bottom-color: var(--hsk-border) !important; }
+
+/* ============================================================================
+   8. NÚT & HỘP THOẠI DÙNG CHUNG
+   ==========================================================================*/
+.chat-dashboard__conversation__head__option button,
+.RevealPinMsgModal .edit-button,
+.info-zone__description__edit__save {
+  background-color: var(--hsk-primary) !important;
+  border-color: var(--hsk-primary) !important;
+  color: var(--hsk-text-inverse) !important;
+  border-radius: var(--hsk-r-sm) !important;
+  font-weight: 600 !important;
+  transition: background-color var(--hsk-dur) var(--hsk-ease) !important;
+}
+.chat-dashboard__conversation__head__option button:hover,
+.RevealPinMsgModal .edit-button:hover,
+.info-zone__description__edit__save:hover,
+.info-zone__description__edit__save:focus {
+  background-color: var(--hsk-primary-hover) !important;
+  border-color: var(--hsk-primary-hover) !important;
+  color: var(--hsk-text-inverse) !important;
+}
+.chat-dashboard__history__head__button--select {
+  background-color: var(--hsk-primary-soft) !important;
+  border: 1px solid var(--hsk-primary) !important;
+  color: var(--hsk-primary-strong) !important;
+  border-radius: var(--hsk-r-pill) !important;
+}
+.chat-dashboard__history__head__button--deselect {
+  background-color: var(--hsk-surface-2) !important;
+  border: 1px solid var(--hsk-border) !important;
+  color: var(--hsk-text-muted) !important;
+  border-radius: var(--hsk-r-pill) !important;
+}
+.chat-dashboard__history__head__notify__count,
+.chat-dashboard__history__unseennum,
+.chat-dashboard__history__top__feedback__num { background-color: var(--hsk-danger) !important; }
+
+/* Bảng chọn emoji */
+.emoji-mart {
+  border: 1px solid var(--hsk-border) !important;
+  border-radius: var(--hsk-r-md) !important;
+  box-shadow: var(--hsk-shadow-lg) !important;
+  color: var(--hsk-text) !important;
+}
+.emoji-mart-anchor-selected, .emoji-mart-anchor:hover, .emoji-mart-anchor:focus { color: var(--hsk-primary) !important; }
+.emoji-mart-anchor-bar { background-color: var(--hsk-primary) !important; }
+.emoji-mart-search input {
+  border: 1px solid var(--hsk-border) !important;
+  border-radius: var(--hsk-r-pill) !important;
+}
+.emoji-mart-search input:focus { border-color: var(--hsk-primary) !important; box-shadow: var(--hsk-focus-ring) !important; }
+
+/* ============================================================================
+   9. RESPONSIVE
+   ==========================================================================*/
+
+/* --- Màn hình lớn: giới hạn bề rộng bong bóng cho dễ đọc ----------------- */
+@media (min-width: 1600px) {
+  .chat-dashboard__conversation__content__row__user,
+  .chat-dashboard__conversation__content__row__target,
+  .chat-dashboard__conversation__content__row__mixture { max-width: 620px !important; }
+}
+
+/* --- Laptop nhỏ / tablet ngang: thu gọn khoảng cách ---------------------- */
+@media (max-width: 1399.98px) {
+  :root { --hsk-fs-md: 14px; --hsk-fs-lg: 16px; }
+  .chat-dashboard__history__title { padding: 0 var(--hsk-sp-3) !important; }
+  [class*="chat-group_chat-item"] { padding: var(--hsk-sp-2) !important; }
+  .chat-dashboard__conversation__content { padding-left: var(--hsk-sp-3) !important; }
+}
+
+/* --- Tablet dọc: ẩn cột thông tin nhóm để chừa chỗ cho hội thoại --------- */
+@media (max-width: 1199.98px) and (min-width: 768px) {
+  .chat-dashboard__column:has(.info-zone) { display: none !important; }
+  .chat-dashboard__column:has(.chat-dashboard__history) { flex: 0 0 34% !important; max-width: 34% !important; }
+  .chat-dashboard__column:has(.chat-dashboard__conversation) { flex: 1 1 66% !important; max-width: 66% !important; }
+  .menu-taskbar { width: 58px !important; }
+}
+
+/* --- Mobile -------------------------------------------------------------
+   App xếp 3 cột chồng dọc dưới 768px, mỗi cột cao 100vh, trong khi
+   `.chat-dashboard` lại là `position: fixed; height: 100%`. Hệ quả: phần
+   khung hội thoại nằm ngoài màn hình và KHÔNG thể cuộn tới được.
+   Cách xử lý thuần CSS: biến hàng chứa 3 cột thành vùng cuộn dọc có
+   scroll-snap, mỗi cột là một "trang" chiếm trọn màn hình — vuốt để chuyển
+   giữa Danh sách / Hội thoại / Thông tin nhóm.
+   ------------------------------------------------------------------------*/
+@media (max-width: 767.98px) {
+  :root {
+    --hsk-fs-base: 15px;   /* chữ to hơn một chút cho màn cảm ứng */
+    --hsk-fs-md:   15px;
+    --hsk-fs-lg:   16px;
+    --hsk-sp-5:    16px;
+  }
+
+  .menu-taskbar { width: 54px !important; flex: 0 0 54px !important; }
+  .menu-taskbar__option__icon { width: 34px !important; height: 34px !important; }
+
+  .chat-dashboard > .ant-row {
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scroll-snap-type: y mandatory !important;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+  .chat-dashboard > .ant-row::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
+
+  .chat-dashboard__column {
+    height: 100% !important;
+    min-height: 100% !important;
+    scroll-snap-align: start !important;
+    scroll-snap-stop: always !important;
+  }
+
+  /* Vùng chạm tối thiểu 44px theo khuyến nghị của WCAG 2.5.5 */
+  [class*="chat-group_chat-item"] { padding: 10px var(--hsk-sp-2) !important; min-height: 64px; }
+  .chat-dashboard__conversation__head__menu > span { width: 40px; height: 40px; }
+  .chat-dashboard__conversation__box__file.p-0,
+  .chat-dashboard__conversation__box__file:has(svg[data-testid="SendRoundedIcon"]) { width: 42px !important; height: 42px !important; }
+
+  /* Bong bóng rộng hơn vì màn hẹp */
+  .chat-dashboard__conversation__content__row__user,
+  .chat-dashboard__conversation__content__row__target,
+  .chat-dashboard__conversation__content__row__mixture { max-width: 86% !important; }
+
+  .chat-dashboard__history__title { padding: 0 var(--hsk-sp-3) !important; }
+  .chat-dashboard__conversation__content { padding-left: var(--hsk-sp-2) !important; padding-right: var(--hsk-sp-1) !important; }
+  .chat-dashboard__conversation__content__group-header { margin-left: 38px !important; }
+
+  /* Thanh cuộn luôn hiện trên cảm ứng sẽ chiếm chỗ — thu nhỏ lại */
+  ::-webkit-scrollbar { width: 6px !important; height: 6px !important; }
+  ::-webkit-scrollbar-thumb { border-width: 2px !important; }
+}
+
+/* --- Màn hình rất hẹp ---------------------------------------------------- */
+@media (max-width: 400px) {
+  .chat-dashboard__history__top__left__download { display: none !important; } /* nhường chỗ cho tiêu đề */
+  [class*="chat-group_member-time"] { font-size: 10px !important; }
+}
+
+/* --- In ấn --------------------------------------------------------------- */
+@media print {
+  .menu-taskbar,
+  .chat-dashboard__conversation__box,
+  .info-zone { display: none !important; }
+  .chat-dashboard__conversation__content__row__user,
+  .chat-dashboard__conversation__content__row__target { box-shadow: none !important; }
+}

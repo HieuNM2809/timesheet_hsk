@@ -93,6 +93,7 @@ Kết quả dòng đó và toàn bộ tổng kết được **tính lại ngay**
 | `chat-mark-all-read.js` | Nút "Đọc tất cả" trên danh sách hội thoại `chat.hasaki.vn` (xem mục 12). |
 | `chat-bookmark-sort.js` | Thanh sắp xếp cho tab "Đánh dấu" trên `chat.hasaki.vn` (xem mục 13). |
 | `chat-avatar-hover.css` | Hiệu ứng phóng to avatar khi rê chuột trên `chat.hasaki.vn` (xem mục 14). |
+| `chat-theme.css` | Bảng màu + giao diện tổng thể cho `chat.hasaki.vn` (xem mục 15). |
 | `rules_chat_icon.json` + `chat-icon-*.png` | Thay icon PWA của `chat.hasaki.vn` khi cài app (xem mục 10). |
 | `webadmin.js` | Nút đổi domain/port cho request API trên `webadmin.system.local` (xem mục 9). |
 | `checkin.png` | Icon của extension. |
@@ -288,3 +289,105 @@ Vì vậy chỉ cần **scale ảnh bên trong khung**, khung giữ nguyên kíc
 File là **CSS thuần**, khai báo qua `content_scripts.css` trong manifest nên không cần JS và tự áp dụng cho cả phần tử mới do app render thêm.
 
 **Không áp dụng cho** badge số đếm thành viên (`.styles_hsk-avatar__alphabet__*`): đó không phải ảnh và khung của nó `overflow: visible` nên scale sẽ bị tràn.
+
+---
+
+## 15. Chủ đề giao diện cho Hasaki Chat (`chat-theme.css`)
+
+Một file **CSS thuần**, khai báo qua `content_scripts.css` trong manifest, phủ lên toàn bộ `chat.hasaki.vn`: bảng màu thống nhất, bong bóng tin nhắn phân biệt rõ, hover/focus nhẹ nhàng, thanh cuộn tuỳ chỉnh và sửa layout mobile. **Không đụng vào HTML hay logic** của app.
+
+### 15.1. Bảng màu
+
+Toàn bộ màu khai báo bằng **CSS variables** ở `:root`, đặt tên theo vai trò (không theo màu) nên đổi một dòng là đổi cả giao diện.
+
+| Nhóm | Biến chính | Giá trị | Dùng ở đâu |
+|---|---|---|---|
+| Chủ đạo | `--hsk-primary` | `hsl(152 39% 31%)` = `#306E51` | Taskbar, nút gửi, vạch tab |
+| | `--hsk-primary-hover` / `-deep` | `#35825E` / `#16462F` | Hover / active |
+| | `--hsk-primary-strong` | `#225D42` | Chữ xanh trên nền trắng (7.7:1) |
+| | `--hsk-primary-soft` / `-tint` | `#DEF2E9` / `#F0F9F5` | Header hội thoại, nền hover |
+| Nền | `--hsk-surface` / `-2` | `#F6F9F7` / `#EDF1EF` | Thanh ghim, ô nhập |
+| Viền | `--hsk-border` / `-strong` | `#DDE4E0` / `#C6D1CB` | Đường kẻ, thanh cuộn |
+| Chữ | `--hsk-text` | `#1C2622` | Nội dung (15.6:1) |
+| | `--hsk-text-muted` | `#5C7067` | Chữ phụ (5.3:1) |
+| | `--hsk-text-on-bubble` | `#41584D` | Giờ gửi trong bong bóng (5.8:1) |
+| Nhấn | `--hsk-accent` | `#B54708` | Tag `@mention` |
+| | `--hsk-link` | `#0B67AD` | Link trong tin nhắn (5.9:1) |
+| Trạng thái | `--hsk-success` / `--hsk-danger` | `#228145` / `#B81E1E` | Badge chưa đọc / badge đỏ |
+| | `--hsk-online` / `--hsk-offline` | `#259D51` / `#7B8E85` | Chấm trạng thái (đều ≥ 3:1) |
+
+**Vì sao chọn vậy:** giữ nguyên `#306E51` làm gốc (đúng màu taskbar app đang dùng và đúng màu logo Hasaki), rồi dựng cả thang màu quanh **hue 152** — cùng tông với logo nên không bị lệch nhận diện. Màu trung tính cũng ngả xanh nhẹ (hue 150) thay vì xám xanh lạnh `#F0F2F5` của app, nên nền và màu thương hiệu hoà vào nhau thay vì "chửi" nhau.
+
+Ngoài ra còn thang **font-size** (`--hsk-fs-xs` … `--hsk-fs-lg`), **khoảng cách** bội số 4px (`--hsk-sp-1` … `-5`), **bo góc** (`--hsk-r-sm/md/lg/pill`) và **đổ bóng** (`--hsk-shadow-xs/sm/md/lg`) để mọi thành phần dùng chung một hệ số đo.
+
+### 15.2. Sửa các lỗi tương phản (WCAG AA)
+
+App gốc có 5 chỗ chữ **không đạt** chuẩn AA (cần ≥ 4.5:1). Đã đo bằng công thức WCAG 2.1 và sửa hết:
+
+| Chỗ | Màu cũ | Tỷ lệ cũ | Màu mới | Tỷ lệ mới |
+|---|---|---|---|---|
+| Ngăn cách ngày, số thành viên | `#999999` | **2.85** ✗ | `#5C7067` | 5.29 ✓ |
+| Tag `@mention` (chữ trắng) | `#FD6600` | **2.97** ✗ | `#B54708` | 5.43 ✓ |
+| Link trong tin nhắn | `#1890FF` | **3.24** ✗ | `#0B67AD` | 5.90 ✓ |
+| Giờ gửi trong bong bóng | `gray` | **3.95** ✗ | `#41584D` | 5.77 ✓ |
+| Tin nhắn phụ ở danh sách | `#777777` | **4.48** ✗ | `#5C7067` | 5.29 ✓ |
+
+Chữ trong bong bóng: **11.7:1** (của mình) và **14.1:1** (của người khác) — vượt xa mức AA.
+
+### 15.3. Phân biệt bong bóng tin nhắn
+
+App cũ dùng `#DDF0E7` (của mình) và `#F0F2F5` (của người khác) — hai màu chênh nhau chỉ **1.06:1**, gần như nhìn không ra. Bản mới dùng **3 tín hiệu chồng lên nhau** để kể cả người mù màu vẫn phân biệt được:
+
+| | Của **mình** | Của **người khác** | Của **bot** |
+|---|---|---|---|
+| Nền | `#C0E8D5` (xanh bạc hà) | `#F1F4F2` (trung tính) | `#E7F8F0` |
+| Viền | `#8BC6AA` liền | `#D2DAD6` liền | `#306E51` **nét đứt** |
+| Bo góc | `14-14-6-14` (vát góc **dưới phải**) | `14-14-14-6` (vát góc **dưới trái**) | `14px` đều |
+| Vị trí | Phải | Trái | Trái |
+
+Góc vát đóng vai trò "đuôi bong bóng" chỉ về phía người gửi — đây là tín hiệu **hình dạng**, vẫn đọc được khi in đen trắng hoặc khi không phân biệt được màu.
+
+### 15.4. Các thành phần khác
+
+- **Header hội thoại**: cố định 56px (`flex: 0 0 56px`, trước đây bị thanh ghim ép co còn ~48px), nền `--hsk-primary-soft`, nhóm icon bên phải có vùng bấm tròn 36px và nền hover mờ.
+- **Danh sách hội thoại**: mỗi dòng bo góc 10px, hover nền `--hsk-surface-2`; hội thoại **đang mở** có nền xanh nhạt **và vạch chỉ báo 3px bên trái**. Nhãn nhóm ("Đã ghim") viết hoa, giãn chữ. Chữ "chưa đọc" đổi từ `green` (`#008000`) sang xanh thương hiệu.
+- **Ô tìm kiếm**: bo tròn hẳn, nền chìm; focus thì nền trắng + viền xanh + vòng sáng.
+- **Khung soạn tin**: viền sáng lên bằng `:focus-within` khi con trỏ ở trong ô (đã kiểm chứng: lúc không focus là nền xám, viền `#DDE4E0`, không có vòng sáng).
+- **Nút gửi**: từ icon xám `#666` thành **nút tròn 38px nền xanh thương hiệu, icon trắng**; hover nhấc lên 1px + đậm màu, nhấn thì lún xuống (`scale(0.94)`).
+- **"Đang nhập…"**: thêm chấm tròn nhấp nháy 1.2s phía trước (chỉ hiện khi có người đang gõ).
+- **Thanh cuộn**: rộng 10px, thumb bo tròn màu `--hsk-border-strong` trên nền trong suốt; ở danh sách hội thoại và khung tin nhắn thì **chỉ hiện khi rê chuột vào**.
+- **Vòng focus bàn phím**: mọi phần tử tương tác có `:focus-visible` viền 2px + offset 2px, phục vụ người dùng bàn phím.
+
+### 15.5. Responsive
+
+| Bề ngang | Thay đổi |
+|---|---|
+| ≥ 1600px | Giới hạn bong bóng 620px cho dễ đọc |
+| ≤ 1399px | Thu gọn padding, giảm cỡ chữ tiêu đề |
+| 768–1199px | **Ẩn cột "Thông tin nhóm"**, chia lại 34% / 66% cho danh sách và hội thoại; taskbar còn 58px |
+| ≤ 767px | Xem mục 15.6 |
+| ≤ 400px | Ẩn nút "Tải App" để nhường chỗ tiêu đề |
+
+### 15.6. Sửa lỗi layout mobile
+
+**Lỗi của app:** dưới 768px, antd xếp 3 cột **chồng dọc**, mỗi cột cao `100vh`, trong khi `.chat-dashboard` lại là `position: fixed; height: 100%`. Hệ quả: khung hội thoại nằm ở `y = 844px` — **ngoài màn hình và không cuộn tới được**. Trên điện thoại chỉ xem được danh sách hội thoại, không mở được tin nhắn.
+
+**Cách sửa (thuần CSS):** biến hàng chứa 3 cột thành vùng cuộn dọc có `scroll-snap`, mỗi cột là một "trang" chiếm trọn màn hình:
+
+```css
+.chat-dashboard > .ant-row {
+  height: 100%; overflow-y: auto;
+  scroll-snap-type: y mandatory; overscroll-behavior: contain;
+}
+.chat-dashboard__column { height: 100%; scroll-snap-align: start; scroll-snap-stop: always; }
+```
+
+Vuốt dọc để chuyển giữa **Danh sách → Hội thoại → Thông tin nhóm**. Đã kiểm chứng ở 390×844: vùng cuộn cao 2532px (3 trang), cuộn tới trang 2 thì khung hội thoại về đúng `y = 0`. Kèm theo: taskbar thu còn 54px, mỗi dòng hội thoại cao 75px (đạt khuyến nghị vùng chạm 44px của WCAG 2.5.5), bong bóng rộng tối đa 86%.
+
+### 15.7. Lưu ý kỹ thuật
+
+- **Vì sao nhiều `!important`:** CSS của content script được Chrome chèn **trước** stylesheet của trang, nên nếu không có `!important` thì rule của app (cùng độ ưu tiên) sẽ thắng.
+- **Vì sao dùng `[class*="..."]`:** app dùng CSS Modules, tên class có hash đổi mỗi lần deploy (`chat-group_chat-item__RsOiz`). Chọn bằng `[class*="chat-group_chat-item"]` thì đổi hash vẫn chạy.
+- **Không xung đột** với `chat-avatar-hover.css` (file đó chỉ đụng `.MuiAvatar-root` / `.MuiAvatar-img`).
+- Có `@media (prefers-reduced-motion: reduce)` rút thời lượng chuyển động về ~0 và `@media print` ẩn taskbar / ô soạn tin khi in.
+- **Áp dụng:** vào `chrome://extensions` bấm **Reload**, rồi **refresh** lại `chat.hasaki.vn`. Muốn tắt tạm thì bỏ `"chat-theme.css"` khỏi mảng `css` trong `manifest.json`.

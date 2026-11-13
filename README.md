@@ -91,6 +91,7 @@ Kết quả dòng đó và toàn bộ tổng kết được **tính lại ngay**
 | `chat.js` | Bỏ chữ "(UTC+7)" trên `chat.hasaki.vn`. |
 | `chat-quick-reply.js` | Thanh câu trả lời nhanh trên `chat.hasaki.vn` (xem mục 11). |
 | `chat-mark-all-read.js` | Nút "Đọc tất cả" trên danh sách hội thoại `chat.hasaki.vn` (xem mục 12). |
+| `chat-bookmark-sort.js` | Thanh sắp xếp cho tab "Đánh dấu" trên `chat.hasaki.vn` (xem mục 13). |
 | `rules_chat_icon.json` + `chat-icon-*.png` | Thay icon PWA của `chat.hasaki.vn` khi cài app (xem mục 10). |
 | `webadmin.js` | Nút đổi domain/port cho request API trên `webadmin.system.local` (xem mục 9). |
 | `checkin.png` | Icon của extension. |
@@ -237,3 +238,18 @@ Header auth lấy từ `localStorage`: `authorization: Bearer <accessToken>` và
 - Số trên tab **"Chờ xử lý"** không phải số hội thoại chưa đọc (thực tế có 10 hội thoại chưa đọc nhưng tab hiện 60+), nên nút này không làm số đó về 0.
 - Cần socket của app đang mở; nếu bấm ngay khi trang vừa tải mà chưa kết nối, script chờ tối đa 8s rồi báo lỗi.
 - Debug trong console: `__hskMarkAllReadDebug()` (socket đã bắt được chưa) và `__hskMarkAllRead()` (chạy không cần nút).
+
+---
+
+## 13. Sắp xếp tab "Đánh dấu" trên Hasaki Chat
+
+Trong tab **Đánh dấu**, phía trên danh sách có thanh **Sắp xếp: Mặc định · Ngày · Người gửi · Nhóm**.
+
+- Bấm một tiêu chí để sắp xếp; **bấm lại tiêu chí đang chọn để đổi chiều** (mũi tên ↑/↓ cho biết tăng/giảm dần).
+- Mặc định của từng tiêu chí: Ngày giảm dần (mới nhất trước), Người gửi và Nhóm tăng dần (A→Z, so sánh theo tiếng Việt).
+- **Mặc định** trả về thứ tự gốc của app.
+- Lựa chọn lưu trong `chrome.storage.local` (key `hsk_bookmark_sort`), giữ nguyên khi tải lại trang.
+
+**Cách hoạt động:** danh sách của app là flex column, script chỉ gán CSS `order` cho từng item chứ **không dời node trong DOM**, nên React vẫn quản lý danh sách bình thường, không xung đột. Thanh sắp xếp được chèn làm item đầu tiên của danh sách (dính ở trên khi cuộn) và tự ẩn khi chuyển sang tab khác; `MutationObserver` gắn lại và sắp xếp lại khi app tải thêm hoặc dựng lại danh sách.
+
+**Giới hạn:** DOM chỉ hiển thị ngày `dd/mm/yyyy` (không có giờ), nên các tin **cùng ngày** giữ nguyên thứ tự gốc của app.

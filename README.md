@@ -94,6 +94,7 @@ Kết quả dòng đó và toàn bộ tổng kết được **tính lại ngay**
 | `chat-bookmark-sort.js` | Thanh sắp xếp cho tab "Đánh dấu" trên `chat.hasaki.vn` (xem mục 13). |
 | `chat-avatar-hover.css` | Hiệu ứng phóng to avatar khi rê chuột trên `chat.hasaki.vn` (xem mục 14). |
 | `chat-theme.css` | Bảng màu + giao diện tổng thể cho `chat.hasaki.vn` (xem mục 15). |
+| `chat-dblclick-tick.js` | Double-click tin nhắn để thả reaction ✓ trên `chat.hasaki.vn` (xem mục 16). |
 | `rules_chat_icon.json` + `chat-icon-*.png` | Thay icon PWA của `chat.hasaki.vn` khi cài app (xem mục 10). |
 | `webadmin.js` | Nút đổi domain/port cho request API trên `webadmin.system.local` (xem mục 9). |
 | `checkin.png` | Icon của extension. |
@@ -391,3 +392,39 @@ Vuốt dọc để chuyển giữa **Danh sách → Hội thoại → Thông tin
 - **Không xung đột** với `chat-avatar-hover.css` (file đó chỉ đụng `.MuiAvatar-root` / `.MuiAvatar-img`).
 - Có `@media (prefers-reduced-motion: reduce)` rút thời lượng chuyển động về ~0 và `@media print` ẩn taskbar / ô soạn tin khi in.
 - **Áp dụng:** vào `chrome://extensions` bấm **Reload**, rồi **refresh** lại `chat.hasaki.vn`. Muốn tắt tạm thì bỏ `"chat-theme.css"` khỏi mảng `css` trong `manifest.json`.
+
+---
+
+## 16. Double-click để thả ✓ trên Hasaki Chat
+
+**Double-click vào một tin nhắn** → thả reaction **tích ✓** (icon "Hoàn thành" trong bảng reaction của app) lên tin đó. Icon ✓ hiện **ngay** trên tin, kèm hiệu ứng ✓ nhỏ bật lên tại chỗ double-click.
+
+- **Chỉ thả một lần**: đã thả ✓ tin đó rồi thì không gửi gì nữa, chỉ hiện nhắc *"Bạn đã thả ✓ tin này rồi"*. Lý do: app dùng **cùng một API cho cả thả lẫn gỡ** reaction, gửi lại sẽ **gỡ mất** ✓. Muốn gỡ ✓ thì dùng bảng reaction của app như cũ.
+- **Không đụng single-click của app**: double-click lên **mention, link, ảnh, file, vùng reaction**… vẫn chạy như cũ và không thả ✓. Double-click ra ngoài tin nhắn cũng không có gì xảy ra.
+- Double-click trên tin **không bôi đen chữ** nữa (nếu để bôi đen, app sẽ bật popup "Trả lời" đoạn chữ vừa chọn đè lên tin). Muốn chọn chữ thì kéo chuột như bình thường.
+- Giữ **Ctrl / Shift / Alt** khi double-click thì không thả ✓.
+- Không áp dụng ở những chỗ app cũng ẩn nút reaction: chế độ chọn nhiều tin, tin đã thu hồi / gửi lỗi / đang gửi, nhóm bị khoá, phòng trợ lý AI.
+- Lỗi (mất mạng, hết phiên đăng nhập…) thì ✓ được gỡ khỏi giao diện và hiện lý do màu đỏ ngay tại chỗ double-click.
+
+**Cách hoạt động:** khảo sát bundle của app cho thấy bấm icon ✓ trong bảng reaction sẽ gọi
+
+```
+POST https://api.hasakichat.com/api/v1/chat/reaction   {"message_id": "<id tin>", "reaction_name": "accept"}
+```
+
+rồi app **không tự vẽ** mà chờ server phát sự kiện socket `update_reaction`, lúc đó mới dispatch `UPDATE_REACTION` vào Redux store để vẽ lại. Script chạy ở **MAIN world** (để đọc được React/Redux của app) và làm theo đúng luồng đó:
+
+1. Lấy id tin từ bubble `#msg-<id>`, tìm Redux store của app bằng cách đi ngược cây React tới Provider của react-redux.
+2. Xem `state.chatConversation.messages[].emotions` của tin: đã có `accept` của mình (so `partner_id` + `partner_user_id` với `state.auth.profile`, giống cách app tô icon đang chọn) thì dừng.
+3. Dispatch `UPDATE_REACTION` thêm ✓ của mình → icon hiện ngay bằng chính reducer của app, không sửa DOM.
+4. Hỏi lại server bằng `GET /chat/fetchReactionInfo` (phòng khi vừa thả ✓ ở thiết bị khác mà store chưa cập nhật), chưa có mới `POST /chat/reaction`. Server phát `update_reaction`, app thay bằng danh sách thật.
+5. API lỗi thì dispatch lại danh sách cũ (chỉ khi socket chưa cập nhật gì mới hơn). Double-click dồn dập trên cùng một tin chỉ gửi **một** request.
+
+Phần tử "có click riêng" được nhận biết bằng thẻ (`a`, `img`, `button`…) và bằng prop `onClick` mà React gắn trên phần tử, nên phần tử bấm được mà app thêm sau này cũng tự được bỏ qua.
+
+**Đã kiểm chứng trên trang thật** ở chế độ khô (POST bị chặn, không gửi gì lên server): tin chưa có reaction → GET + POST đúng payload, ✓ hiện sau 1 microtask (trước khi server trả lời); double-click lại hoặc tin đã có ✓ từ trước → không gọi API; 2 double-click liên tiếp → 1 POST; API lỗi → ✓ được hoàn tác; mention / ảnh / link / vùng reaction / single-click / giữ Ctrl / chế độ chọn nhiều tin → không làm gì.
+
+**Giới hạn:**
+- Dựa vào cấu trúc nội bộ của app (React fiber, tên action `UPDATE_REACTION`, `state.chatConversation`). Nếu app đổi mà không đọc được store thì vẫn thả ✓ được (vẫn hỏi server trước khi gửi), chỉ là icon hiện khi socket báo về chứ không hiện ngay.
+- Bảng reaction của app còn đánh dấu đã đọc tới tin vừa thả nếu tin đó mới hơn mốc đã đọc; script không làm bước này (app vẫn tự đánh dấu khi bạn cuộn tới cuối).
+- **Áp dụng:** vào `chrome://extensions` bấm **Reload**, rồi **refresh** lại `chat.hasaki.vn`.

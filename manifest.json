@@ -69,6 +69,12 @@
       "js": ["chat-mark-all-read.js"],
       "run_at": "document_start",
       "world": "MAIN"
+    },
+    {
+      "matches": ["https://chat.hasaki.vn/*"],
+      "js": ["chat-dblclick-tick.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
     }
   ]
 }

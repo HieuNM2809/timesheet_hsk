@@ -95,6 +95,7 @@ Kết quả dòng đó và toàn bộ tổng kết được **tính lại ngay**
 | `chat-avatar-hover.css` | Hiệu ứng phóng to avatar khi rê chuột trên `chat.hasaki.vn` (xem mục 14). |
 | `chat-theme.css` | Bảng màu + giao diện tổng thể cho `chat.hasaki.vn` (xem mục 15). |
 | `chat-dblclick-tick.js` | Double-click tin nhắn để thả reaction ✓ trên `chat.hasaki.vn` (xem mục 16). |
+| `chat-work-link.js` | Thay nút "Tải App" trên `chat.hasaki.vn` bằng nút mở `work.hasaki.vn` (xem mục 17). |
 | `rules_chat_icon.json` + `chat-icon-*.png` | Thay icon PWA của `chat.hasaki.vn` khi cài app (xem mục 10). |
 | `webadmin.js` | Nút đổi domain/port cho request API trên `webadmin.system.local` (xem mục 9). |
 | `checkin.png` | Icon của extension. |
@@ -428,3 +429,16 @@ Phần tử "có click riêng" được nhận biết bằng thẻ (`a`, `img`, 
 - Dựa vào cấu trúc nội bộ của app (React fiber, tên action `UPDATE_REACTION`, `state.chatConversation`). Nếu app đổi mà không đọc được store thì vẫn thả ✓ được (vẫn hỏi server trước khi gửi), chỉ là icon hiện khi socket báo về chứ không hiện ngay.
 - Bảng reaction của app còn đánh dấu đã đọc tới tin vừa thả nếu tin đó mới hơn mốc đã đọc; script không làm bước này (app vẫn tự đánh dấu khi bạn cuộn tới cuối).
 - **Áp dụng:** vào `chrome://extensions` bấm **Reload**, rồi **refresh** lại `chat.hasaki.vn`.
+
+---
+
+## 17. Nút "HasakiWork" thay cho "Tải App" trên Hasaki Chat
+
+Trên header danh sách hội thoại, nút **Tải App** của app được thay bằng nút **HasakiWork** (icon cặp công việc) ở đúng chỗ cũ. Bấm vào thì mở **https://work.hasaki.vn/** ở **tab mới**, chat vẫn giữ nguyên; nếu đang dùng app chat đã cài (PWA) thì link mở trong trình duyệt.
+
+- Nút là link thật (`<a target="_blank">`), nên chuột giữa / Ctrl + click cũng mở tab mới như mọi link khác.
+- Kiểu nút giống nút **✓ Đọc tất cả** (viền xanh, hover nền xanh chữ trắng) cho header đồng bộ.
+
+**Cách làm:** nút "Tải App" của app là `span.chat-dashboard__history__top__left__download` (bấm mở popover tải app). Script `chat-work-link.js` chỉ **ẩn** nút đó (`display: none`, không xoá vì node do React quản lý) rồi chèn nút mới (Shadow DOM) ngay sau nó. Chữ "Tải App" vẫn còn trong DOM nên `chat-mark-all-read.js` vẫn tìm đúng hàng tiêu đề để đặt nút "Đọc tất cả". App là SPA nên `MutationObserver` gắn lại nút khi header được dựng lại.
+
+**Áp dụng:** vào `chrome://extensions` bấm **Reload**, rồi **refresh** lại `chat.hasaki.vn`.
